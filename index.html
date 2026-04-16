@@ -36,26 +36,20 @@
         <h2 class="font-black text-blue-400 text-3xl italic mb-10 tracking-tighter">MC ENDER</h2>
         <nav class="space-y-3">
             <button onclick="irA('inicio')" class="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition">🏠 Inicio</button>
-            
             <button id="btn-menu-publicar" onclick="irA('publicar')" class="hidden w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition border border-blue-500/20">🚀 Publicar Addon</button>
-            
             <hr class="border-white/10 my-4">
             
             <div id="auth-container">
                 <div id="inputs-auth" class="space-y-2 mb-4">
                     <input type="email" id="auth-email" placeholder="Correo" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none text-sm focus:border-blue-500">
                     <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none text-sm focus:border-blue-500">
-                    
-                    <div id="auth-buttons" class="grid grid-cols-2 gap-2 mt-4">
+                    <div class="grid grid-cols-2 gap-2 mt-4">
                         <button onclick="loginConEmail()" class="p-3 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 font-bold text-[10px] border border-blue-500/50 uppercase">Entrar</button>
                         <button onclick="registroConEmail()" class="p-3 rounded-xl bg-white/5 hover:bg-white/10 font-bold text-[10px] border border-white/20 uppercase">Registrar</button>
                     </div>
                 </div>
-
                 <div id="social-auth-label" class="text-[9px] text-gray-500 text-center mb-4 italic uppercase tracking-widest">O usa Google</div>
-                
                 <button id="btn-login-google" onclick="iniciarSesionGoogle()" class="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition border border-white/10 text-sm">🔵 Google Auth</button>
-                
                 <button id="btn-logout" onclick="cerrarSesion()" class="hidden w-full text-left p-4 rounded-2xl bg-red-600/10 hover:bg-red-600/20 font-bold transition border border-red-500/20 text-red-400">🚪 Cerrar Sesión</button>
             </div>
         </nav>
@@ -71,10 +65,6 @@
 
     <main class="p-4">
         <div id="seccion-inicio">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="font-black italic uppercase text-gray-400">Recientes</h3>
-                <div class="h-[1px] flex-1 bg-white/10 ml-4"></div>
-            </div>
             <div id="lista-addons" class="space-y-4 text-center">
                 <div class="inline-block loading-spinner" style="display: inline-block;"></div>
             </div>
@@ -84,16 +74,15 @@
             <div class="liquid-glass p-6">
                 <h2 class="text-xl font-black mb-6 text-blue-400 italic text-center uppercase">Subir Contenido</h2>
                 <div class="space-y-4">
-                    <input type="text" id="add-title" placeholder="Nombre del Addon" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none focus:border-blue-500">
+                    <input type="text" id="add-title" placeholder="Nombre" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none">
                     <select id="add-category" class="w-full bg-[#1a1a2e] p-4 rounded-2xl border border-white/10 outline-none text-gray-400">
                         <option value="Addon">Tipo: Addon</option>
                         <option value="Texture">Tipo: Textura</option>
                         <option value="Map">Tipo: Mapa</option>
-                        <option value="Other">Tipo: Otro</option>
                     </select>
-                    <textarea id="add-desc" placeholder="¿De qué trata tu creación?..." class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 h-24 resize-none focus:border-blue-500"></textarea>
-                    <input type="text" id="add-link" placeholder="Link de descarga" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 focus:border-blue-500">
-                    <label class="w-full bg-white/5 p-6 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center cursor-pointer hover:bg-white/10 transition">
+                    <textarea id="add-desc" placeholder="Descripción..." class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 h-24 outline-none"></textarea>
+                    <input type="text" id="add-link" placeholder="Link de descarga" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none">
+                    <label class="w-full bg-white/5 p-6 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center cursor-pointer">
                         <span id="file-name" class="text-[10px] font-black uppercase text-gray-400">Seleccionar Miniatura</span>
                         <input type="file" id="add-image" accept="image/*" class="hidden" onchange="actualizarNombreArchivo(this)">
                     </label>
@@ -111,6 +100,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <script>
+        // CONFIGURACIÓN VERIFICADA
         const firebaseConfig = {
             apiKey: "AIzaSyDnui2ui53sn30EDm3daaIdbt9-oVdJQng",
             authDomain: "addonverse-78e65.firebaseapp.com",
@@ -124,15 +114,12 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
         const provider = new firebase.auth.GoogleAuthProvider();
-
         let usuarioActual = null;
-
-        // --- FUNCIONES DE AUTH ---
 
         function registroConEmail() {
             const email = document.getElementById('auth-email').value;
             const pass = document.getElementById('auth-pass').value;
-            if(!email || !pass) return alert("Completa los datos.");
+            if(!email || !pass) return alert("Llena los campos.");
             auth.createUserWithEmailAndPassword(email, pass)
                 .then(() => alert("¡Cuenta creada!"))
                 .catch(err => alert("Error: " + err.message));
@@ -141,129 +128,85 @@
         function loginConEmail() {
             const email = document.getElementById('auth-email').value;
             const pass = document.getElementById('auth-pass').value;
-            if(!email || !pass) return alert("Ingresa tus datos.");
             auth.signInWithEmailAndPassword(email, pass)
-                .catch(err => alert("Error: Credenciales inválidas."));
+                .catch(err => alert("Error: " + err.message));
         }
 
         function iniciarSesionGoogle() {
             auth.signInWithPopup(provider).catch(err => alert("Error Google: " + err.message));
         }
 
-        function cerrarSesion() {
-            auth.signOut();
-        }
+        function cerrarSesion() { auth.signOut(); }
 
         auth.onAuthStateChanged((user) => {
-            const btnPublicar = document.getElementById('btn-menu-publicar');
-            const btnLoginGoogle = document.getElementById('btn-login-google');
-            const btnLogout = document.getElementById('btn-logout');
-            const inputsAuth = document.getElementById('inputs-auth');
-            const socialLabel = document.getElementById('social-auth-label');
-
-            if (user) {
-                usuarioActual = user;
-                btnPublicar.classList.remove('hidden');
-                btnLogout.classList.remove('hidden');
-                btnLoginGoogle.classList.add('hidden');
-                inputsAuth.classList.add('hidden');
-                socialLabel.classList.add('hidden');
-            } else {
-                usuarioActual = null;
-                btnPublicar.classList.add('hidden');
-                btnLogout.classList.add('hidden');
-                btnLoginGoogle.classList.remove('hidden');
-                inputsAuth.classList.remove('hidden');
-                socialLabel.classList.remove('hidden');
-                irA('inicio');
-            }
+            usuarioActual = user;
+            const logueado = !!user;
+            document.getElementById('btn-menu-publicar').classList.toggle('hidden', !logueado);
+            document.getElementById('btn-logout').classList.toggle('hidden', !logueado);
+            document.getElementById('inputs-auth').classList.toggle('hidden', logueado);
+            document.getElementById('social-auth-label').classList.toggle('hidden', logueado);
+            document.getElementById('btn-login-google').classList.toggle('hidden', logueado);
         });
 
-        // --- NAVEGACIÓN Y RENDER ---
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); }
-        
-        function irA(seccion) {
+        function irA(s) { 
             if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
-            ['inicio', 'publicar'].forEach(s => document.getElementById('seccion-' + s).classList.add('hidden'));
-            document.getElementById('seccion-' + seccion).classList.remove('hidden');
-            window.scrollTo(0,0);
+            document.getElementById('seccion-inicio').classList.toggle('hidden', s !== 'inicio');
+            document.getElementById('seccion-publicar').classList.toggle('hidden', s !== 'publicar');
         }
 
-        function actualizarNombreArchivo(input) {
-            if (input.files[0]) {
-                document.getElementById('file-name').innerText = "✅ " + input.files[0].name.toUpperCase();
-            }
-        }
+        function actualizarNombreArchivo(i) { if(i.files[0]) document.getElementById('file-name').innerText = "✅ " + i.files[0].name.toUpperCase(); }
 
         db.collection("addons").orderBy("fecha", "desc").onSnapshot((snapshot) => {
             const lista = document.getElementById('lista-addons');
             lista.innerHTML = ""; 
             snapshot.forEach((doc) => {
-                const data = doc.data();
-                const card = `
-                    <div onclick="abrirModal(\`${data.titulo}\`, \`${data.descripcion}\`, \`${data.link}\`, \`${data.foto}\`, \`${data.categoria || 'Addon'}\`, \`${data.autor || 'Anónimo'}\`)" 
-                         class="liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5 mb-4 shadow-xl">
-                        <img src="${data.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10 shadow-lg">
-                        <div class="flex-1 text-left">
-                            <span class="text-[8px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-bold uppercase">${data.categoria || 'Addon'}</span>
-                            <div class="text-lg font-black text-white uppercase italic leading-tight mt-1">${data.titulo}</div>
-                            <p class="text-[7px] text-gray-500 font-bold uppercase mt-1 tracking-widest">Subido por: ${data.autor || 'Admin'}</p>
-                        </div>
-                    </div>`;
+                const d = doc.data();
+                const card = `<div onclick="abrirModal(\`${d.titulo}\`, \`${d.descripcion}\`, \`${d.link}\`, \`${d.foto}\`, \`${d.categoria}\`, \`${d.autor}\`)" class="liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5 mb-4 shadow-xl">
+                    <img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10">
+                    <div class="flex-1 text-left">
+                        <span class="text-[8px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-bold uppercase">${d.categoria || 'Addon'}</span>
+                        <div class="text-lg font-black text-white uppercase italic leading-tight mt-1">${d.titulo}</div>
+                        <p class="text-[7px] text-gray-500 font-bold uppercase mt-1">Subido por: ${d.autor}</p>
+                    </div>
+                </div>`;
                 lista.insertAdjacentHTML('beforeend', card);
             });
         });
 
         function publicarAddon() {
-            if(!usuarioActual) return alert("Logueate primero.");
-            const titulo = document.getElementById('add-title').value;
-            const desc = document.getElementById('add-desc').value;
-            const link = document.getElementById('add-link').value;
-            const cat = document.getElementById('add-category').value;
-            const imagenInput = document.getElementById('add-image');
-            const btn = document.getElementById('btn-subir');
-            const loader = document.getElementById('btn-loader');
-
-            if(!titulo || !desc || !link || !imagenInput.files[0]) return alert("Faltan datos.");
+            if(!usuarioActual) return;
+            const t = document.getElementById('add-title').value;
+            const d = document.getElementById('add-desc').value;
+            const l = document.getElementById('add-link').value;
+            const c = document.getElementById('add-category').value;
+            const i = document.getElementById('add-image').files[0];
+            if(!t || !d || !l || !i) return alert("Faltan datos.");
             
-            btn.disabled = true;
-            loader.style.display = "block";
+            document.getElementById('btn-subir').disabled = true;
+            document.getElementById('btn-loader').style.display = "block";
 
-            const lector = new FileReader();
-            lector.onload = function(e) {
-                // Si no hay nombre (login por email), usa el email antes del @
-                const nombreAutor = usuarioActual.displayName || usuarioActual.email.split('@')[0];
-                
+            const reader = new FileReader();
+            reader.onload = (e) => {
                 db.collection("addons").add({
-                    titulo: titulo, 
-                    descripcion: desc, 
-                    link: link, 
-                    categoria: cat,
-                    foto: e.target.result, 
-                    autor: nombreAutor,
-                    uid: usuarioActual.uid,
+                    titulo: t, descripcion: d, link: l, categoria: c, foto: e.target.result,
+                    autor: usuarioActual.displayName || usuarioActual.email.split('@')[0],
                     fecha: Date.now()
-                }).then(() => location.reload()).catch(() => {
-                    alert("Error al subir.");
-                    btn.disabled = false;
-                    loader.style.display = "none";
-                });
+                }).then(() => location.reload());
             };
-            lector.readAsDataURL(imagenInput.files[0]);
+            reader.readAsDataURL(i);
         }
 
-        function abrirModal(titulo, desc, link, img, cat, autor) {
-            document.getElementById('modal-title').innerText = titulo;
-            document.getElementById('modal-desc').innerText = desc;
-            document.getElementById('modal-link').href = link;
-            document.getElementById('modal-img').src = img;
-            document.getElementById('modal-tag').innerText = cat;
-            document.getElementById('modal-autor').innerText = "By: " + autor;
+        function abrirModal(t, d, l, i, c, a) {
+            document.getElementById('modal-title').innerText = t;
+            document.getElementById('modal-desc').innerText = d;
+            document.getElementById('modal-link').href = l;
+            document.getElementById('modal-img').src = i;
+            document.getElementById('modal-tag').innerText = c;
+            document.getElementById('modal-autor').innerText = "By: " + a;
             document.getElementById('modal-detalle').classList.remove('hidden');
         }
-
         function cerrarModal() { document.getElementById('modal-detalle').classList.add('hidden'); }
     </script>
 </body>
-    </html>
-    
+</html>
