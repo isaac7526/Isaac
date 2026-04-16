@@ -4,12 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mc Ender Official</title>
-    
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-
     <style>
         body { background: radial-gradient(circle at top, #1a1a2e, #0b0b0b); color: white; font-family: 'Inter', sans-serif; min-height: 100vh; }
         .liquid-glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; }
@@ -37,14 +32,30 @@
         </div>
     </div>
 
-    <div id="sidebar" class="fixed inset-y-0 left-0 w-72 liquid-glass z-50 p-6 menu-lateral m-2 shadow-2xl">
+    <div id="sidebar" class="fixed inset-y-0 left-0 w-72 liquid-glass z-50 p-6 menu-lateral m-2 shadow-2xl overflow-y-auto">
         <h2 class="font-black text-blue-400 text-3xl italic mb-10 tracking-tighter">MC ENDER</h2>
         <nav class="space-y-3">
             <button onclick="irA('inicio')" class="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition">🏠 Inicio</button>
+            
             <button id="btn-menu-publicar" onclick="irA('publicar')" class="hidden w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition border border-blue-500/20">🚀 Publicar Addon</button>
+            
             <hr class="border-white/10 my-4">
+            
             <div id="auth-container">
-                <button id="btn-login" onclick="iniciarSesion()" class="w-full text-left p-4 rounded-2xl bg-blue-600/20 hover:bg-blue-600/30 font-bold transition border border-blue-500/50">🔵 Entrar con Google</button>
+                <div id="inputs-auth" class="space-y-2 mb-4">
+                    <input type="email" id="auth-email" placeholder="Correo" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none text-sm focus:border-blue-500">
+                    <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none text-sm focus:border-blue-500">
+                    
+                    <div id="auth-buttons" class="grid grid-cols-2 gap-2 mt-4">
+                        <button onclick="loginConEmail()" class="p-3 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 font-bold text-[10px] border border-blue-500/50 uppercase">Entrar</button>
+                        <button onclick="registroConEmail()" class="p-3 rounded-xl bg-white/5 hover:bg-white/10 font-bold text-[10px] border border-white/20 uppercase">Registrar</button>
+                    </div>
+                </div>
+
+                <div id="social-auth-label" class="text-[9px] text-gray-500 text-center mb-4 italic uppercase tracking-widest">O usa Google</div>
+                
+                <button id="btn-login-google" onclick="iniciarSesionGoogle()" class="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition border border-white/10 text-sm">🔵 Google Auth</button>
+                
                 <button id="btn-logout" onclick="cerrarSesion()" class="hidden w-full text-left p-4 rounded-2xl bg-red-600/10 hover:bg-red-600/20 font-bold transition border border-red-500/20 text-red-400">🚪 Cerrar Sesión</button>
             </div>
         </nav>
@@ -65,7 +76,7 @@
                 <div class="h-[1px] flex-1 bg-white/10 ml-4"></div>
             </div>
             <div id="lista-addons" class="space-y-4 text-center">
-                <div class="inline-block loading-spinner" id="main-loader" style="display: inline-block;"></div>
+                <div class="inline-block loading-spinner" style="display: inline-block;"></div>
             </div>
         </div>
 
@@ -81,7 +92,7 @@
                         <option value="Other">Tipo: Otro</option>
                     </select>
                     <textarea id="add-desc" placeholder="¿De qué trata tu creación?..." class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 h-24 resize-none focus:border-blue-500"></textarea>
-                    <input type="text" id="add-link" placeholder="Link de descarga (Mediafire/Drive)" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 focus:border-blue-500">
+                    <input type="text" id="add-link" placeholder="Link de descarga" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 focus:border-blue-500">
                     <label class="w-full bg-white/5 p-6 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center cursor-pointer hover:bg-white/10 transition">
                         <span id="file-name" class="text-[10px] font-black uppercase text-gray-400">Seleccionar Miniatura</span>
                         <input type="file" id="add-image" accept="image/*" class="hidden" onchange="actualizarNombreArchivo(this)">
@@ -95,8 +106,11 @@
         </div>
     </main>
 
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
     <script>
-        // --- 2. CONFIGURACIÓN DE FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyDnui2ui53sn30EDm3daaIdbt9-oVdJQng",
             authDomain: "addonverse-78e65.firebaseapp.com",
@@ -106,7 +120,6 @@
             appId: "1:862103750236:web:3df64155e18cf90211c899"
         };
 
-        // Inicialización segura
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
@@ -114,72 +127,76 @@
 
         let usuarioActual = null;
 
-        // --- 3. LÓGICA DE USUARIO (REDIRECCIÓN) ---
-        function iniciarSesion() {
-            console.log("Iniciando redirección a Google...");
-            auth.signInWithRedirect(provider);
+        // --- FUNCIONES DE AUTH ---
+
+        function registroConEmail() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            if(!email || !pass) return alert("Completa los datos.");
+            auth.createUserWithEmailAndPassword(email, pass)
+                .then(() => alert("¡Cuenta creada!"))
+                .catch(err => alert("Error: " + err.message));
+        }
+
+        function loginConEmail() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            if(!email || !pass) return alert("Ingresa tus datos.");
+            auth.signInWithEmailAndPassword(email, pass)
+                .catch(err => alert("Error: Credenciales inválidas."));
+        }
+
+        function iniciarSesionGoogle() {
+            auth.signInWithPopup(provider).catch(err => alert("Error Google: " + err.message));
         }
 
         function cerrarSesion() {
-            auth.signOut().then(() => {
-                window.location.reload();
-            });
+            auth.signOut();
         }
-
-        // Recuperar sesión al volver de Google
-        auth.getRedirectResult().then((result) => {
-            if (result && result.user) {
-                console.log("Usuario detectado tras redirección");
-            }
-        }).catch((error) => {
-            console.error("Error en redirección:", error.message);
-        });
 
         auth.onAuthStateChanged((user) => {
             const btnPublicar = document.getElementById('btn-menu-publicar');
-            const btnLogin = document.getElementById('btn-login');
+            const btnLoginGoogle = document.getElementById('btn-login-google');
             const btnLogout = document.getElementById('btn-logout');
+            const inputsAuth = document.getElementById('inputs-auth');
+            const socialLabel = document.getElementById('social-auth-label');
 
             if (user) {
                 usuarioActual = user;
-                if(btnPublicar) btnPublicar.classList.remove('hidden');
-                if(btnLogin) btnLogin.classList.add('hidden');
-                if(btnLogout) btnLogout.classList.remove('hidden');
+                btnPublicar.classList.remove('hidden');
+                btnLogout.classList.remove('hidden');
+                btnLoginGoogle.classList.add('hidden');
+                inputsAuth.classList.add('hidden');
+                socialLabel.classList.add('hidden');
             } else {
                 usuarioActual = null;
-                if(btnPublicar) btnPublicar.classList.add('hidden');
-                if(btnLogin) btnLogin.classList.remove('hidden');
-                if(btnLogout) btnLogout.classList.add('hidden');
+                btnPublicar.classList.add('hidden');
+                btnLogout.classList.add('hidden');
+                btnLoginGoogle.classList.remove('hidden');
+                inputsAuth.classList.remove('hidden');
+                socialLabel.classList.remove('hidden');
+                irA('inicio');
             }
         });
 
-        // --- NAVEGACIÓN ---
+        // --- NAVEGACIÓN Y RENDER ---
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); }
         
         function irA(seccion) {
             if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
-            ['inicio', 'publicar'].forEach(s => {
-                const el = document.getElementById('seccion-' + s);
-                if(el) el.classList.add('hidden');
-            });
-            const target = document.getElementById('seccion-' + seccion);
-            if(target) target.classList.remove('hidden');
+            ['inicio', 'publicar'].forEach(s => document.getElementById('seccion-' + s).classList.add('hidden'));
+            document.getElementById('seccion-' + seccion).classList.remove('hidden');
             window.scrollTo(0,0);
         }
 
         function actualizarNombreArchivo(input) {
             if (input.files[0]) {
-                const name = input.files[0].name;
-                document.getElementById('file-name').innerText = "✅ " + name.toUpperCase();
+                document.getElementById('file-name').innerText = "✅ " + input.files[0].name.toUpperCase();
             }
         }
 
-        // --- RENDERIZADO DE DATOS ---
         db.collection("addons").orderBy("fecha", "desc").onSnapshot((snapshot) => {
             const lista = document.getElementById('lista-addons');
-            const mainLoader = document.getElementById('main-loader');
-            if(mainLoader) mainLoader.style.display = "none";
-            
             lista.innerHTML = ""; 
             snapshot.forEach((doc) => {
                 const data = doc.data();
@@ -197,10 +214,8 @@
             });
         });
 
-        // --- PUBLICAR ---
         function publicarAddon() {
-            if(!usuarioActual) return alert("Debes iniciar sesión para publicar.");
-
+            if(!usuarioActual) return alert("Logueate primero.");
             const titulo = document.getElementById('add-title').value;
             const desc = document.getElementById('add-desc').value;
             const link = document.getElementById('add-link').value;
@@ -209,30 +224,29 @@
             const btn = document.getElementById('btn-subir');
             const loader = document.getElementById('btn-loader');
 
-            if(!titulo || !desc || !link || !imagenInput.files[0]) return alert("Faltan datos, bro.");
-            if(imagenInput.files[0].size > 850000) return alert("Imagen muy pesada (máx 800KB).");
-
+            if(!titulo || !desc || !link || !imagenInput.files[0]) return alert("Faltan datos.");
+            
             btn.disabled = true;
-            if(loader) loader.style.display = "block";
+            loader.style.display = "block";
 
             const lector = new FileReader();
             lector.onload = function(e) {
+                // Si no hay nombre (login por email), usa el email antes del @
+                const nombreAutor = usuarioActual.displayName || usuarioActual.email.split('@')[0];
+                
                 db.collection("addons").add({
                     titulo: titulo, 
                     descripcion: desc, 
                     link: link, 
                     categoria: cat,
                     foto: e.target.result, 
-                    autor: usuarioActual.displayName,
+                    autor: nombreAutor,
                     uid: usuarioActual.uid,
                     fecha: Date.now()
-                }).then(() => {
-                    alert("¡Publicado con éxito!");
-                    window.location.reload();
-                }).catch(err => {
+                }).then(() => location.reload()).catch(() => {
                     alert("Error al subir.");
                     btn.disabled = false;
-                    if(loader) loader.style.display = "none";
+                    loader.style.display = "none";
                 });
             };
             lector.readAsDataURL(imagenInput.files[0]);
@@ -251,4 +265,5 @@
         function cerrarModal() { document.getElementById('modal-detalle').classList.add('hidden'); }
     </script>
 </body>
-</html>
+    </html>
+    
