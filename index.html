@@ -100,7 +100,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <script>
-        // CONFIGURACIÓN OFICIAL
+        // CONFIGURACIÓN REVISADA
         const firebaseConfig = {
             apiKey: "AIzaSyBYmWjewoq80B94YrZ7UMnGwO4YcXRwg3Y",
             authDomain: "addonverse-78e65.firebaseapp.com",
@@ -152,7 +152,7 @@
             document.getElementById('btn-login-google').classList.toggle('hidden', logueado);
         });
 
-        // FUNCIONES DE NAVEGACIÓN
+        // NAVEGACIÓN Y MENÚ
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); }
         
         function irA(s) { 
@@ -184,7 +184,7 @@
             });
         });
 
-        // PUBLICAR NUEVO ADDON
+        // PUBLICAR CONTENIDO
         function publicarAddon() {
             if(!usuarioActual) return alert("Debes iniciar sesión");
             const t = document.getElementById('add-title').value;
@@ -211,12 +211,15 @@
                 }).then(() => {
                     alert("¡Publicado!");
                     location.reload();
-                }).catch(err => alert("Error al subir: " + err));
+                }).catch(err => {
+                    alert("Error: " + err);
+                    document.getElementById('btn-subir').disabled = false;
+                });
             };
             reader.readAsDataURL(i);
         }
 
-        // MODAL
+        // CONTROL DE MODAL
         function abrirModal(t, d, l, i, c, a) {
             document.getElementById('modal-title').innerText = t;
             document.getElementById('modal-desc').innerText = d;
