@@ -100,25 +100,25 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <script>
-        // CONFIGURACIÓN VERIFICADA
-     const firebaseConfig = {
-  apiKey: "AIzaSyBYmWjewoq80B94YrZ7UMnGwO4YcXRwg3Y",
-  authDomain: "addonverse-78e65.firebaseapp.com",
-  projectId: "addonverse-78e65",
-  storageBucket: "addonverse-78e65.firebasestorage.app",
-  messagingSenderId: "177601088346",
-  appId: "1:177601088346:web:a09dd9f447ad339d54c163",
-  measurementId: "G-32GSK2XQT2"
-};
-        
-};
+        // CONFIGURACIÓN OFICIAL
+        const firebaseConfig = {
+            apiKey: "AIzaSyBYmWjewoq80B94YrZ7UMnGwO4YcXRwg3Y",
+            authDomain: "addonverse-78e65.firebaseapp.com",
+            projectId: "addonverse-78e65",
+            storageBucket: "addonverse-78e65.firebasestorage.app",
+            messagingSenderId: "177601088346",
+            appId: "1:177601088346:web:a09dd9f447ad339d54c163",
+            measurementId: "G-32GSK2XQT2"
+        };
 
+        // INICIALIZACIÓN
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
         const provider = new firebase.auth.GoogleAuthProvider();
         let usuarioActual = null;
 
+        // FUNCIONES DE AUTENTICACIÓN
         function registroConEmail() {
             const email = document.getElementById('auth-email').value;
             const pass = document.getElementById('auth-pass').value;
@@ -131,6 +131,7 @@
         function loginConEmail() {
             const email = document.getElementById('auth-email').value;
             const pass = document.getElementById('auth-pass').value;
+            if(!email || !pass) return alert("Llena los campos.");
             auth.signInWithEmailAndPassword(email, pass)
                 .catch(err => alert("Error: " + err.message));
         }
@@ -151,21 +152,27 @@
             document.getElementById('btn-login-google').classList.toggle('hidden', logueado);
         });
 
+        // FUNCIONES DE NAVEGACIÓN
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); }
+        
         function irA(s) { 
             if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
             document.getElementById('seccion-inicio').classList.toggle('hidden', s !== 'inicio');
             document.getElementById('seccion-publicar').classList.toggle('hidden', s !== 'publicar');
         }
 
-        function actualizarNombreArchivo(i) { if(i.files[0]) document.getElementById('file-name').innerText = "✅ " + i.files[0].name.toUpperCase(); }
+        function actualizarNombreArchivo(i) { 
+            if(i.files[0]) document.getElementById('file-name').innerText = "✅ " + i.files[0].name.toUpperCase(); 
+        }
 
+        // CARGAR ADDONS DESDE FIRESTORE
         db.collection("addons").orderBy("fecha", "desc").onSnapshot((snapshot) => {
             const lista = document.getElementById('lista-addons');
             lista.innerHTML = ""; 
             snapshot.forEach((doc) => {
                 const d = doc.data();
-                const card = `<div onclick="abrirModal(\`${d.titulo}\`, \`${d.descripcion}\`, \`${d.link}\`, \`${d.foto}\`, \`${d.categoria}\`, \`${d.autor}\`)" class="liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5 mb-4 shadow-xl">
+                const card = `
+                <div onclick="abrirModal(\`${d.titulo}\`, \`${d.descripcion}\`, \`${d.link}\`, \`${d.foto}\`, \`${d.categoria}\`, \`${d.autor}\`)" class="liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5 mb-4 shadow-xl cursor-pointer">
                     <img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10">
                     <div class="flex-1 text-left">
                         <span class="text-[8px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-bold uppercase">${d.categoria || 'Addon'}</span>
@@ -177,13 +184,15 @@
             });
         });
 
+        // PUBLICAR NUEVO ADDON
         function publicarAddon() {
-            if(!usuarioActual) return;
+            if(!usuarioActual) return alert("Debes iniciar sesión");
             const t = document.getElementById('add-title').value;
             const d = document.getElementById('add-desc').value;
             const l = document.getElementById('add-link').value;
             const c = document.getElementById('add-category').value;
             const i = document.getElementById('add-image').files[0];
+            
             if(!t || !d || !l || !i) return alert("Faltan datos.");
             
             document.getElementById('btn-subir').disabled = true;
@@ -192,14 +201,22 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 db.collection("addons").add({
-                    titulo: t, descripcion: d, link: l, categoria: c, foto: e.target.result,
+                    titulo: t, 
+                    descripcion: d, 
+                    link: l, 
+                    categoria: c, 
+                    foto: e.target.result,
                     autor: usuarioActual.displayName || usuarioActual.email.split('@')[0],
                     fecha: Date.now()
-                }).then(() => location.reload());
+                }).then(() => {
+                    alert("¡Publicado!");
+                    location.reload();
+                }).catch(err => alert("Error al subir: " + err));
             };
             reader.readAsDataURL(i);
         }
 
+        // MODAL
         function abrirModal(t, d, l, i, c, a) {
             document.getElementById('modal-title').innerText = t;
             document.getElementById('modal-desc').innerText = d;
