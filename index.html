@@ -39,7 +39,6 @@
 
     <div id="sidebar" class="liquid-glass menu-lateral p-6 m-2 shadow-2xl overflow-y-auto">
         <h2 class="font-black text-blue-400 text-3xl italic mb-6 tracking-tighter">MC ENDER</h2>
-        
         <div id="user-profile" class="hidden mb-8 p-4 liquid-glass border-blue-500/20 text-center">
             <div class="relative inline-block">
                 <img id="user-avatar" src="https://via.placeholder.com/100" class="w-20 h-20 rounded-full border-2 border-blue-500 mx-auto shadow-xl">
@@ -53,12 +52,10 @@
                 <button onclick="guardarNombre()" class="text-[9px] text-blue-400 mt-2 uppercase font-black tracking-widest">💾 Guardar</button>
             </div>
         </div>
-
         <nav class="space-y-3">
             <button onclick="irA('inicio')" class="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition">🏠 Inicio</button>
             <button id="btn-menu-publicar" onclick="irA('publicar')" class="hidden w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition border border-blue-500/20">🚀 Publicar Addon</button>
             <hr class="border-white/10 my-4">
-            
             <div id="auth-container">
                 <div id="inputs-auth" class="space-y-2 mb-4">
                     <input type="email" id="auth-email" placeholder="Correo" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none text-sm focus:border-blue-500">
@@ -83,7 +80,7 @@
             </div>
         </div>
         <div class="relative">
-            <input type="text" id="busqueda" oninput="buscarAddons()" placeholder="Buscar addons, texturas..." class="w-full bg-white/5 p-4 pl-12 rounded-2xl border border-white/10 outline-none focus:border-blue-500/50 text-sm transition-all">
+            <input type="text" id="busqueda" oninput="buscarAddons()" placeholder="Buscar addons..." class="w-full bg-white/5 p-4 pl-12 rounded-2xl border border-white/10 outline-none focus:border-blue-500/50 text-sm transition-all">
             <span class="absolute left-4 top-4 text-gray-500">🔍</span>
         </div>
     </header>
@@ -104,7 +101,6 @@
                         <option value="Addon">Tipo: Addon</option>
                         <option value="Texture">Tipo: Textura</option>
                         <option value="Map">Tipo: Mapa</option>
-                        <option value="Skin">Tipo: Skin</option>
                     </select>
                     <textarea id="add-desc" placeholder="Descripción breve..." class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 h-24 outline-none" required></textarea>
                     <input type="text" id="add-link" placeholder="Link Directo" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none" required>
@@ -144,20 +140,18 @@
         let esAdmin = false;
         let todosLosAddons = [];
 
-        // --- SISTEMA DE NAVEGACIÓN Y MENÚ ---
         function toggleMenu() {
             document.getElementById('sidebar').classList.toggle('active');
             document.getElementById('overlay').classList.toggle('active');
         }
 
         function irA(s) {
-            toggleMenu();
+            if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
             document.getElementById('seccion-inicio').classList.toggle('hidden', s !== 'inicio');
             document.getElementById('seccion-publicar').classList.toggle('hidden', s !== 'publicar');
             window.scrollTo(0,0);
         }
 
-        // --- AUTENTICACIÓN ---
         auth.onAuthStateChanged((user) => {
             usuarioActual = user;
             const logueado = !!user;
@@ -174,38 +168,48 @@
                         esAdmin = data.rol === "admin";
                         document.getElementById('user-name-input').value = data.nombre || "";
                         document.getElementById('user-avatar').src = data.fotoPerfil || "https://via.placeholder.com/100";
-                    } else {
-                        db.collection("usuarios").doc(user.uid).set({
-                            nombre: user.displayName || "Miner",
-                            fotoPerfil: user.photoURL || "https://via.placeholder.com/100",
-                            rol: "user"
-                        });
                     }
                     mostrarAddons(todosLosAddons);
                 });
             }
         });
 
-        // --- FUNCIONES CORE ---
+        // --- ARREGLO PARA QUE EL MODAL NO FALLE NUNCA ---
         function mostrarAddons(lista) {
             const c = document.getElementById('lista-addons');
             c.innerHTML = "";
             lista.forEach((d) => {
-                const btn = esAdmin ? `<button onclick="borrarAddon('${d.id}')" class="text-[10px] bg-red-500/20 text-red-400 px-3 py-1 rounded-lg border border-red-500/30">🗑️ Borrar</button>` : "";
-                const card = `
-                <div class="liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5 mb-4 relative">
-                    <img onclick="abrirModal(\`${d.titulo}\`, \`${d.descripcion}\`, \`${d.link}\`, \`${d.foto}\`, \`${d.categoria}\`, \`${d.autor}\` )" src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10 cursor-pointer">
+                const btnBorrar = esAdmin ? `<button onclick="event.stopPropagation(); borrarAddon('${d.id}')" class="text-[10px] bg-red-500/20 text-red-400 px-3 py-1 rounded-lg border border-red-500/30">🗑️</button>` : "";
+                
+                const card = document.createElement('div');
+                card.className = "liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5 mb-4 relative cursor-pointer";
+                
+                // Usamos un evento directo en lugar de un string para evitar errores de comillas
+                card.onclick = () => verDetalleAddon(d);
+
+                card.innerHTML = `
+                    <img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10">
                     <div class="flex-1 text-left">
                         <div class="flex justify-between items-start">
                             <span class="text-[8px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-bold uppercase">${d.categoria}</span>
-                            ${btn}
+                            ${btnBorrar}
                         </div>
-                        <div onclick="abrirModal(\`${d.titulo}\`, \`${d.descripcion}\`, \`${d.link}\`, \`${d.foto}\`, \`${d.categoria}\`, \`${d.autor}\` )" class="text-lg font-black text-white uppercase italic leading-tight mt-1 cursor-pointer">${d.titulo}</div>
+                        <div class="text-lg font-black text-white uppercase italic leading-tight mt-1">${d.titulo}</div>
                         <p class="text-[7px] text-gray-500 font-bold uppercase mt-1">Por: ${d.autor}</p>
                     </div>
-                </div>`;
-                c.insertAdjacentHTML('beforeend', card);
+                `;
+                c.appendChild(card);
             });
+        }
+
+        function verDetalleAddon(data) {
+            document.getElementById('modal-title').innerText = data.titulo;
+            document.getElementById('modal-desc').innerText = data.descripcion;
+            document.getElementById('modal-link').href = data.link;
+            document.getElementById('modal-img').src = data.foto;
+            document.getElementById('modal-tag').innerText = data.categoria;
+            document.getElementById('modal-autor').innerText = "By: " + data.autor;
+            document.getElementById('modal-detalle').classList.remove('hidden');
         }
 
         db.collection("addons").orderBy("fecha", "desc").onSnapshot((s) => {
@@ -219,9 +223,11 @@
             const txt = document.getElementById('btn-text');
             const imgInput = document.getElementById('add-image').files[0];
 
+            if(!imgInput) return alert("Selecciona imagen");
+
             btn.disabled = true;
             loader.style.display = "block";
-            txt.innerText = "COMPRIMIENDO...";
+            txt.innerText = "PROCESANDO...";
 
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -247,7 +253,7 @@
                         autor: document.getElementById('user-name-input').value || "Miner",
                         fecha: Date.now()
                     }).then(() => {
-                        alert("✅ ¡Addon Publicado!");
+                        alert("✅ ¡Publicado!");
                         document.getElementById('form-publicar').reset();
                         btn.disabled = false;
                         loader.style.display = "none";
@@ -259,27 +265,18 @@
             reader.readAsDataURL(imgInput);
         }
 
-        // --- UTILIDADES ---
-        function abrirModal(t, d, l, i, c, a) {
-            document.getElementById('modal-title').innerText = t;
-            document.getElementById('modal-desc').innerText = d;
-            document.getElementById('modal-link').href = l;
-            document.getElementById('modal-img').src = i;
-            document.getElementById('modal-tag').innerText = c;
-            document.getElementById('modal-autor').innerText = "By: " + a;
-            document.getElementById('modal-detalle').classList.remove('hidden');
-        }
         function cerrarModal() { document.getElementById('modal-detalle').classList.add('hidden'); }
         function buscarAddons() {
             const t = document.getElementById('busqueda').value.toLowerCase();
             const f = todosLosAddons.filter(a => a.titulo.toLowerCase().includes(t));
             mostrarAddons(f);
         }
-        function actualizarNombreArchivo(i) { if(i.files[0]) document.getElementById('file-name').innerText = "✅ SELECCIONADO"; }
+        function actualizarNombreArchivo(i) { if(i.files[0]) document.getElementById('file-name').innerText = "✅ LISTO"; }
         function iniciarSesionGoogle() { auth.signInWithPopup(provider); }
         function cerrarSesion() { auth.signOut().then(() => location.reload()); }
         function loginConEmail() { auth.signInWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value); }
         function registroConEmail() { auth.createUserWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value); }
+        function borrarAddon(id) { if(confirm("¿Borrar?")) db.collection("addons").doc(id).delete(); }
     </script>
 </body>
 </html>
