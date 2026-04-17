@@ -19,6 +19,7 @@
         #user-avatar { object-fit: cover; }
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 90; backdrop-filter: blur(4px); }
         .overlay.active { display: block; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="max-w-lg mx-auto pb-24">
@@ -85,6 +86,12 @@
         </div>
     </header>
 
+    <div id="filtros-container" class="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar bg-[#0b0b0b]/50 sticky top-[138px] z-30 border-b border-white/5">
+        <button onclick="ordenar('recientes')" class="flex-none px-4 py-2 rounded-xl bg-blue-600/20 border border-blue-500/30 text-[10px] font-black uppercase tracking-wider hover:bg-blue-600/40 transition">✨ Recientes</button>
+        <button onclick="ordenar('populares')" class="flex-none px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-wider hover:bg-white/10 transition">🔥 Populares</button>
+        <button onclick="ordenar('antiguos')" class="flex-none px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-wider hover:bg-white/10 transition">⏳ Antiguos</button>
+    </div>
+
     <main class="p-4">
         <div id="seccion-inicio">
             <div id="lista-addons" class="space-y-4">
@@ -139,6 +146,7 @@
         let usuarioActual = null;
         let esAdmin = false;
         let todosLosAddons = [];
+        let currentAddonId = null;
 
         function toggleMenu() {
             document.getElementById('sidebar').classList.toggle('active');
@@ -149,6 +157,7 @@
             if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
             document.getElementById('seccion-inicio').classList.toggle('hidden', s !== 'inicio');
             document.getElementById('seccion-publicar').classList.toggle('hidden', s !== 'publicar');
+            document.getElementById('filtros-container').classList.toggle('hidden', s !== 'inicio');
             window.scrollTo(0,0);
         }
 
@@ -174,7 +183,6 @@
             }
         });
 
-        // --- ARREGLO PARA QUE EL MODAL NO FALLE NUNCA ---
         function mostrarAddons(lista) {
             const c = document.getElementById('lista-addons');
             c.innerHTML = "";
@@ -183,8 +191,6 @@
                 
                 const card = document.createElement('div');
                 card.className = "liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5 mb-4 relative cursor-pointer";
-                
-                // Usamos un evento directo en lugar de un string para evitar errores de comillas
                 card.onclick = () => verDetalleAddon(d);
 
                 card.innerHTML = `
@@ -192,7 +198,10 @@
                     <div class="flex-1 text-left">
                         <div class="flex justify-between items-start">
                             <span class="text-[8px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-bold uppercase">${d.categoria}</span>
-                            ${btnBorrar}
+                            <div class="flex gap-2 items-center">
+                                <span class="text-[9px] text-gray-500 italic">🔥 ${d.descargas || 0}</span>
+                                ${btnBorrar}
+                            </div>
                         </div>
                         <div class="text-lg font-black text-white uppercase italic leading-tight mt-1">${d.titulo}</div>
                         <p class="text-[7px] text-gray-500 font-bold uppercase mt-1">Por: ${d.autor}</p>
@@ -203,13 +212,34 @@
         }
 
         function verDetalleAddon(data) {
+            currentAddonId = data.id;
             document.getElementById('modal-title').innerText = data.titulo;
             document.getElementById('modal-desc').innerText = data.descripcion;
             document.getElementById('modal-link').href = data.link;
             document.getElementById('modal-img').src = data.foto;
             document.getElementById('modal-tag').innerText = data.categoria;
             document.getElementById('modal-autor').innerText = "By: " + data.autor;
+            
+            // Incrementar descargas al hacer clic
+            document.getElementById('modal-link').onclick = () => {
+                db.collection("addons").doc(currentAddonId).update({
+                    descargas: firebase.firestore.FieldValue.increment(1)
+                });
+            };
+
             document.getElementById('modal-detalle').classList.remove('hidden');
+        }
+
+        function ordenar(criterio) {
+            let listaCopia = [...todosLosAddons];
+            if (criterio === 'recientes') {
+                listaCopia.sort((a, b) => b.fecha - a.fecha);
+            } else if (criterio === 'antiguos') {
+                listaCopia.sort((a, b) => a.fecha - b.fecha);
+            } else if (criterio === 'populares') {
+                listaCopia.sort((a, b) => (b.descargas || 0) - (a.descargas || 0));
+            }
+            mostrarAddons(listaCopia);
         }
 
         db.collection("addons").orderBy("fecha", "desc").onSnapshot((s) => {
@@ -251,7 +281,8 @@
                         categoria: document.getElementById('add-category').value,
                         foto: fotoComprimida,
                         autor: document.getElementById('user-name-input').value || "Miner",
-                        fecha: Date.now()
+                        fecha: Date.now(),
+                        descargas: 0
                     }).then(() => {
                         alert("✅ ¡Publicado!");
                         document.getElementById('form-publicar').reset();
@@ -266,11 +297,13 @@
         }
 
         function cerrarModal() { document.getElementById('modal-detalle').classList.add('hidden'); }
+        
         function buscarAddons() {
             const t = document.getElementById('busqueda').value.toLowerCase();
             const f = todosLosAddons.filter(a => a.titulo.toLowerCase().includes(t));
             mostrarAddons(f);
         }
+
         function actualizarNombreArchivo(i) { if(i.files[0]) document.getElementById('file-name').innerText = "✅ LISTO"; }
         function iniciarSesionGoogle() { auth.signInWithPopup(provider); }
         function cerrarSesion() { auth.signOut().then(() => location.reload()); }
@@ -280,4 +313,3 @@
     </script>
 </body>
 </html>
-
