@@ -103,17 +103,19 @@
         
         <div id="seccion-publicar" class="hidden">
             <div class="liquid-glass p-6">
-                <form onsubmit="event.preventDefault(); publicarAddon();" class="space-y-4">
+                <form id="form-addon" onsubmit="event.preventDefault(); publicarAddon();" class="space-y-4">
+                    <input type="hidden" id="edit-id">
                     <input type="text" id="add-title" placeholder="Nombre del Addon" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none" required>
                     <textarea id="add-desc" placeholder="Descripción..." class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 h-24 outline-none" required></textarea>
                     <input type="text" id="add-link" placeholder="Enlace Directo" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none" required>
                     
                     <label class="w-full bg-white/5 p-8 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 transition">
                         <span id="file-label-text" class="text-[10px] font-black uppercase tracking-widest">Seleccionar Miniatura</span>
-                        <input type="file" id="add-image" accept="image/*" class="hidden" onchange="if(this.files[0]) document.getElementById('file-label-text').innerText='✅ LISTO'" required>
+                        <input type="file" id="add-image" accept="image/*" class="hidden" onchange="if(this.files[0]) document.getElementById('file-label-text').innerText='✅ LISTO'">
                     </label>
 
-                    <button type="submit" id="btn-subir" class="btn-primary w-full py-4 rounded-2xl font-black uppercase tracking-widest">PUBLICAR</button>
+                    <button type="submit" id="btn-subir" class="btn-primary w-full py-4 rounded-2xl font-black uppercase tracking-widest">GUARDAR / PUBLICAR</button>
+                    <button type="button" id="btn-cancelar-edit" onclick="resetForm()" class="hidden w-full text-[10px] font-black text-gray-500">CANCELAR EDICIÓN</button>
                 </form>
             </div>
         </div>
@@ -138,6 +140,7 @@
         const provider = new firebase.auth.GoogleAuthProvider();
 
         let todosLosAddons = [];
+        let esAdmin = false;
         let addonActualId = null;
 
         function toggleMenu() {
@@ -162,10 +165,22 @@
             if(!cont) return;
             cont.innerHTML = "";
             lista.forEach(d => {
+                const btnAdmin = esAdmin ? `
+                    <div class="flex gap-1 mt-2">
+                        <button onclick="event.stopPropagation(); prepararEdicion('${d.id}')" class="text-[8px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded-lg font-black uppercase">✏️</button>
+                        <button onclick="event.stopPropagation(); borrarAddon('${d.id}')" class="text-[8px] bg-red-500/20 text-red-400 px-2 py-1 rounded-lg font-black uppercase">🗑️</button>
+                    </div>` : "";
+                
                 const card = document.createElement('div');
                 card.className = "liquid-glass p-3 flex gap-4 items-center addon-card";
                 card.onclick = () => verDetalle(d);
-                card.innerHTML = `<img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10"><div class="flex-1"><h3 class="text-lg font-black italic uppercase leading-tight">${d.titulo}</h3><p class="text-[7px] text-gray-500 uppercase">By: ${d.autor}</p></div>`;
+                card.innerHTML = `
+                    <img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-black italic uppercase leading-tight">${d.titulo}</h3>
+                        <p class="text-[7px] text-gray-500 uppercase">By: ${d.autor}</p>
+                        ${btnAdmin}
+                    </div>`;
                 cont.appendChild(card);
             });
         }
@@ -179,15 +194,84 @@
             if(user) {
                 document.getElementById('user-name').innerText = user.displayName || "Miner";
                 db.collection("usuarios").doc(user.uid).onSnapshot(doc => {
-                    if (doc.exists && doc.data().fotoPerfil) {
-                        document.getElementById('user-avatar').src = doc.data().fotoPerfil;
-                    } else {
-                        document.getElementById('user-avatar').src = user.photoURL || "https://via.placeholder.com/150";
+                    if (doc.exists) {
+                        const data = doc.data();
+                        esAdmin = data.rol === "admin";
+                        if(data.fotoPerfil) document.getElementById('user-avatar').src = data.fotoPerfil;
                     }
+                    mostrarAddons(todosLosAddons);
                 });
+            } else {
+                esAdmin = false;
+                mostrarAddons(todosLosAddons);
             }
         });
 
+        // --- SUPERPODERES ADMIN ---
+        function borrarAddon(id) {
+            if(confirm("¿Seguro que quieres eliminar este addon?")) {
+                db.collection("addons").doc(id).delete();
+            }
+        }
+
+        function prepararEdicion(id) {
+            const d = todosLosAddons.find(a => a.id === id);
+            if(!d) return;
+            irA('publicar');
+            document.getElementById('edit-id').value = d.id;
+            document.getElementById('add-title').value = d.titulo;
+            document.getElementById('add-desc').value = d.descripcion;
+            document.getElementById('add-link').value = d.link;
+            document.getElementById('btn-cancelar-edit').classList.remove('hidden');
+            document.getElementById('file-label-text').innerText = "✅ TIENE IMAGEN (SUBE OTRA PARA CAMBIAR)";
+        }
+
+        function resetForm() {
+            document.getElementById('form-addon').reset();
+            document.getElementById('edit-id').value = "";
+            document.getElementById('btn-cancelar-edit').classList.add('hidden');
+            document.getElementById('file-label-text').innerText = "Seleccionar Miniatura";
+        }
+
+        function publicarAddon() {
+            const id = document.getElementById('edit-id').value;
+            const imgInput = document.getElementById('add-image').files[0];
+            const data = {
+                titulo: document.getElementById('add-title').value,
+                descripcion: document.getElementById('add-desc').value,
+                link: document.getElementById('add-link').value,
+                fecha: Date.now(),
+                autor: auth.currentUser ? auth.currentUser.displayName : "Miner"
+            };
+
+            if(imgInput) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 400; canvas.height = 250;
+                        canvas.getContext('2d').drawImage(img, 0, 0, 400, 250);
+                        data.foto = canvas.toDataURL('image/jpeg', 0.7);
+                        finalizarPublicacion(id, data);
+                    };
+                };
+                reader.readAsDataURL(imgInput);
+            } else {
+                finalizarPublicacion(id, data);
+            }
+        }
+
+        function finalizarPublicacion(id, data) {
+            if(id) {
+                db.collection("addons").doc(id).update(data).then(() => { alert("Editado"); location.reload(); });
+            } else {
+                db.collection("addons").add(data).then(() => { alert("Publicado"); location.reload(); });
+            }
+        }
+
+        // --- RESTO DE FUNCIONES ---
         function cambiarFotoPerfil(input) {
             const file = input.files[0];
             if (!file) return;
@@ -199,9 +283,8 @@
                     const canvas = document.createElement('canvas');
                     canvas.width = 120; canvas.height = 120;
                     canvas.getContext('2d').drawImage(img, 0, 0, 120, 120);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
                     db.collection("usuarios").doc(auth.currentUser.uid).set({
-                        fotoPerfil: dataUrl,
+                        fotoPerfil: canvas.toDataURL('image/jpeg', 0.5),
                         nombre: auth.currentUser.displayName || "Miner"
                     }, { merge: true });
                 };
@@ -249,57 +332,4 @@
             if (!input.value.trim() || !auth.currentUser) return;
             const user = auth.currentUser;
             db.collection("usuarios").doc(user.uid).get().then(doc => {
-                const foto = (doc.exists && doc.data().fotoPerfil) ? doc.data().fotoPerfil : (user.photoURL || "");
-                db.collection("addons").doc(addonActualId).collection("comentarios").add({
-                    usuario: user.displayName || "Miner",
-                    avatar: foto,
-                    texto: input.value,
-                    fecha: Date.now()
-                }).then(() => input.value = "");
-            });
-        }
-
-        function ordenar(modo) {
-            let copia = [...todosLosAddons];
-            if(modo === 'recientes') copia.sort((a,b) => b.fecha - a.fecha);
-            if(modo === 'antiguos') copia.sort((a,b) => a.fecha - b.fecha);
-            if(modo === 'populares') copia.sort((a,b) => (b.descargas || 0) - (a.descargas || 0));
-            mostrarAddons(copia);
-        }
-
-        function iniciarSesionGoogle() { auth.signInWithPopup(provider); }
-        function loginConEmail() { auth.signInWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value); }
-        function registroConEmail() { auth.createUserWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value); }
-        function cerrarSesion() { auth.signOut().then(() => location.reload()); }
-        function cerrarModal() { document.getElementById('modal-detalle').classList.add('hidden'); }
-        function buscarAddons() {
-            const val = document.getElementById('busqueda').value.toLowerCase();
-            mostrarAddons(todosLosAddons.filter(a => a.titulo.toLowerCase().includes(val)));
-        }
-
-        function publicarAddon() {
-            const imgInput = document.getElementById('add-image').files[0];
-            if(!imgInput) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 400; canvas.height = 250; // Miniatura optimizada
-                    canvas.getContext('2d').drawImage(img, 0, 0, 400, 250);
-                    db.collection("addons").add({
-                        titulo: document.getElementById('add-title').value,
-                        descripcion: document.getElementById('add-desc').value,
-                        link: document.getElementById('add-link').value,
-                        foto: canvas.toDataURL('image/jpeg', 0.7),
-                        fecha: Date.now(),
-                        autor: auth.currentUser ? auth.currentUser.displayName : "Miner"
-                    }).then(() => location.reload());
-                };
-            };
-            reader.readAsDataURL(imgInput);
-        }
-    </script>
-</body>
-</html>
+                const foto = (doc.exists && doc.data().fotoPerfil) ? doc.data().fotoP
