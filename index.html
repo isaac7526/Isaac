@@ -40,7 +40,6 @@
                 <span id="modal-autor"></span>
             </div>
             <a id="modal-link" href="#" target="_blank" class="btn-primary block w-full py-4 rounded-2xl font-black text-center mb-6 shadow-lg uppercase tracking-widest">DESCARGAR</a>
-            
             <div class="border-t border-white/10 pt-4">
                 <h3 class="text-xs font-black uppercase text-blue-400 mb-4 italic text-center">Comentarios</h3>
                 <div id="comentar-form" class="hidden mb-6 flex gap-2">
@@ -54,7 +53,6 @@
 
     <div id="sidebar" class="liquid-glass menu-lateral p-6 m-2 shadow-2xl overflow-y-auto">
         <h2 class="font-black text-blue-400 text-3xl italic mb-6 tracking-tighter">MC ENDER</h2>
-        
         <div id="user-info" class="hidden mb-6 p-4 bg-white/5 rounded-3xl border border-white/10">
             <div class="flex items-center gap-3 mb-4">
                 <label class="profile-upload">
@@ -69,10 +67,9 @@
             </div>
             <div class="space-y-2">
                 <input type="text" id="edit-name" placeholder="Cambiar nombre..." class="w-full bg-black/20 p-2 rounded-xl border border-white/5 text-[10px] outline-none">
-                <button onclick="actualizarNombre()" class="w-full py-2 bg-blue-600/20 border border-blue-500/40 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Guardar Nombre</button>
+                <button onclick="actualizarNombre()" class="w-full py-2 bg-blue-600/20 border border-blue-500/40 rounded-xl text-[8px] font-black uppercase tracking-widest">Guardar Nombre</button>
             </div>
         </div>
-
         <nav class="space-y-3">
             <button onclick="irA('inicio')" class="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition">🏠 Inicio</button>
             <button id="btn-menu-publicar" onclick="irA('publicar')" class="hidden w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition border border-blue-500/20">🚀 Publicar Addon</button>
@@ -158,52 +155,6 @@
         let addonActualId = null;
         let unsubscribeComentarios = null;
 
-        // --- SISTEMA DE FOTO CON COMPRESIÓN Y FIRESTORE (SIN ERRORES) ---
-        function cambiarFotoPerfil(input) {
-            const file = input.files[0];
-            if (!file) return;
-
-            if (file.size > 5 * 1024 * 1024) { 
-                alert("La foto es muy pesada. Usa una menor a 5MB.");
-                return;
-            }
-
-            const loader = document.getElementById('avatar-loader');
-            loader.style.display = "block";
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const size = 120; // Tamaño optimizado para evitar el error "URL too long"
-                    canvas.width = size;
-                    canvas.height = size;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, size, size);
-                    
-                    const dataUrlReducida = canvas.toDataURL('image/jpeg', 0.5);
-                    const user = auth.currentUser;
-
-                    // Guardamos en la colección de usuarios para no depender del límite de Auth
-                    db.collection("usuarios").doc(user.uid).set({
-                        fotoPerfil: dataUrlReducida,
-                        nombre: user.displayName || "Miner"
-                    }, { merge: true }).then(() => {
-                        document.getElementById('user-avatar').src = dataUrlReducida;
-                        loader.style.display = "none";
-                        alert("¡Foto actualizada en tu perfil de Mc Ender!");
-                    }).catch(err => {
-                        loader.style.display = "none";
-                        alert("Error: " + err.message);
-                    });
-                };
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // --- FUNCIONES DE NAVEGACIÓN Y AUTH ---
         function toggleMenu() {
             document.getElementById('sidebar').classList.toggle('active');
             document.getElementById('overlay').classList.toggle('active');
@@ -213,6 +164,77 @@
             document.getElementById('seccion-inicio').classList.toggle('hidden', s !== 'inicio');
             document.getElementById('seccion-publicar').classList.toggle('hidden', s !== 'publicar');
             if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
+        }
+
+        // --- CARGA DE ADDONS SIEMPRE ACTIVA ---
+        db.collection("addons").orderBy("fecha", "desc").onSnapshot(s => {
+            todosLosAddons = s.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            mostrarAddons(todosLosAddons);
+        }, err => console.log("Error cargando addons:", err));
+
+        function mostrarAddons(lista) {
+            const cont = document.getElementById('lista-addons');
+            if(!cont) return;
+            cont.innerHTML = "";
+            lista.forEach(d => {
+                const btnBorrar = esAdmin ? `<button onclick="event.stopPropagation(); borrarAddon('${d.id}')" class="text-[10px] bg-red-500/20 text-red-400 px-3 py-1 rounded-lg ml-2">🗑️</button>` : "";
+                const card = document.createElement('div');
+                card.className = "liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5 mb-4";
+                card.onclick = () => verDetalle(d);
+                card.innerHTML = `<img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10"><div class="flex-1"><div class="flex justify-between items-center"><span class="text-[8px] text-blue-400 font-bold uppercase bg-blue-500/10 px-2 py-0.5 rounded-full">Addon</span><div class="flex items-center"><span class="text-[9px] text-gray-500 italic">🔥 ${d.descargas || 0}</span>${btnBorrar}</div></div><h3 class="text-lg font-black italic uppercase leading-tight mt-1">${d.titulo}</h3><p class="text-[7px] text-gray-500 uppercase">By: ${d.autor}</p></div>`;
+                cont.appendChild(card);
+            });
+        }
+
+        // --- SISTEMA DE USUARIOS ---
+        auth.onAuthStateChanged(user => {
+            const logueado = !!user;
+            document.getElementById('btn-menu-publicar').classList.toggle('hidden', !logueado);
+            document.getElementById('btn-logout').classList.toggle('hidden', !logueado);
+            document.getElementById('inputs-auth').classList.toggle('hidden', logueado);
+            document.getElementById('user-info').classList.toggle('hidden', !logueado);
+            
+            if(user) {
+                document.getElementById('user-name').innerText = user.displayName || "Miner";
+                db.collection("usuarios").doc(user.uid).onSnapshot(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if(data.fotoPerfil) document.getElementById('user-avatar').src = data.fotoPerfil;
+                        esAdmin = data.rol === "admin";
+                    } else {
+                        document.getElementById('user-avatar').src = user.photoURL || "https://via.placeholder.com/150";
+                    }
+                    mostrarAddons(todosLosAddons);
+                });
+            } else {
+                esAdmin = false;
+                mostrarAddons(todosLosAddons);
+            }
+        });
+
+        function cambiarFotoPerfil(input) {
+            const file = input.files[0];
+            if (!file || !auth.currentUser) return;
+            const loader = document.getElementById('avatar-loader');
+            loader.style.display = "block";
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 120; canvas.height = 120;
+                    canvas.getContext('2d').drawImage(img, 0, 0, 120, 120);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+                    db.collection("usuarios").doc(auth.currentUser.uid).set({
+                        fotoPerfil: dataUrl,
+                        nombre: auth.currentUser.displayName || "Miner"
+                    }, { merge: true }).then(() => {
+                        loader.style.display = "none";
+                    }).catch(() => loader.style.display = "none");
+                };
+            };
+            reader.readAsDataURL(file);
         }
 
         function actualizarNombre() {
@@ -227,52 +249,12 @@
             }
         }
 
-        auth.onAuthStateChanged(user => {
-            const logueado = !!user;
-            document.getElementById('btn-menu-publicar').classList.toggle('hidden', !logueado);
-            document.getElementById('btn-logout').classList.toggle('hidden', !logueado);
-            document.getElementById('inputs-auth').classList.toggle('hidden', logueado);
-            document.getElementById('user-info').classList.toggle('hidden', !logueado);
-            if(user) {
-                document.getElementById('user-name').innerText = user.displayName || "Miner";
-                // Buscamos la foto en Firestore primero para evitar el error de URL larga de Auth
-                db.collection("usuarios").doc(user.uid).get().then(doc => {
-                    if (doc.exists && doc.data().fotoPerfil) {
-                        document.getElementById('user-avatar').src = doc.data().fotoPerfil;
-                    } else {
-                        document.getElementById('user-avatar').src = user.photoURL || "https://via.placeholder.com/150";
-                    }
-                    if (doc.exists) esAdmin = doc.data().rol === "admin";
-                    mostrarAddons(todosLosAddons);
-                });
-            }
-        });
-
-        // --- FILTROS Y CONTENIDO ---
         function ordenar(modo) {
             let copia = [...todosLosAddons];
             if(modo === 'recientes') copia.sort((a,b) => b.fecha - a.fecha);
             if(modo === 'antiguos') copia.sort((a,b) => a.fecha - b.fecha);
             if(modo === 'populares') copia.sort((a,b) => (b.descargas || 0) - (a.descargas || 0));
             mostrarAddons(copia);
-        }
-
-        db.collection("addons").orderBy("fecha", "desc").onSnapshot(s => {
-            todosLosAddons = s.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            mostrarAddons(todosLosAddons);
-        });
-
-        function mostrarAddons(lista) {
-            const cont = document.getElementById('lista-addons');
-            cont.innerHTML = "";
-            lista.forEach(d => {
-                const btnBorrar = esAdmin ? `<button onclick="event.stopPropagation(); borrarAddon('${d.id}')" class="text-[10px] bg-red-500/20 text-red-400 px-3 py-1 rounded-lg ml-2">🗑️</button>` : "";
-                const card = document.createElement('div');
-                card.className = "liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5 mb-4";
-                card.onclick = () => verDetalle(d);
-                card.innerHTML = `<img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10"><div class="flex-1"><div class="flex justify-between items-center"><span class="text-[8px] text-blue-400 font-bold uppercase bg-blue-500/10 px-2 py-0.5 rounded-full">Addon</span><div class="flex items-center"><span class="text-[9px] text-gray-500 italic">🔥 ${d.descargas || 0}</span>${btnBorrar}</div></div><h3 class="text-lg font-black italic uppercase leading-tight mt-1">${d.titulo}</h3><p class="text-[7px] text-gray-500 uppercase">By: ${d.autor}</p></div>`;
-                cont.appendChild(card);
-            });
         }
 
         function verDetalle(d) {
@@ -286,8 +268,7 @@
             document.getElementById('modal-link').href = d.link;
             document.getElementById('modal-link').onclick = () => db.collection("addons").doc(d.id).update({ descargas: firebase.firestore.FieldValue.increment(1) });
             cargarComentarios(d.id);
-            const user = auth.currentUser;
-            document.getElementById('comentar-form').classList.toggle('hidden', !user);
+            document.getElementById('comentar-form').classList.toggle('hidden', !auth.currentUser);
             document.getElementById('modal-detalle').classList.remove('hidden');
         }
 
@@ -296,9 +277,24 @@
             if(unsubscribeComentarios) unsubscribeComentarios();
             unsubscribeComentarios = db.collection("addons").doc(addonId).collection("comentarios").orderBy("fecha", "desc").onSnapshot(snap => {
                 lista.innerHTML = "";
-                if(snap.empty) lista.innerHTML = "<p class='text-[9px] text-center text-gray-600'>Nadie ha opinado aún.</p>";
+                if(snap.empty) lista.innerHTML = "<p class='text-[9px] text-center text-gray-600'>Sin comentarios.</p>";
                 snap.forEach(doc => {
                     const c = doc.data();
                     const div = document.createElement('div');
                     div.className = "bg-white/5 p-3 rounded-2xl border border-white/5 flex gap-3";
-                    div.innerHTML = `<img src="${c.avatar || 'https://via.placeholder.com/150'}" class="w-8 h-8 rounded-full border border-blue-500/30 object-cover"><div><p class="text-[9px] font-black text-blue-400 itali
+                    div.innerHTML = `<img src="${c.avatar || 'https://via.placeholder.com/150'}" class="w-8 h-8 rounded-full border border-blue-500/30 object-cover"><div><p class="text-[9px] font-black text-blue-400 italic">${c.usuario}</p><p class="text-[10px] text-gray-300">${c.texto}</p></div>`;
+                    lista.appendChild(div);
+                });
+            });
+        }
+
+        function enviarComentario() {
+            const input = document.getElementById('nuevo-comentario');
+            if (!input.value.trim() || !auth.currentUser) return;
+            const user = auth.currentUser;
+            db.collection("usuarios").doc(user.uid).get().then(doc => {
+                const foto = (doc.exists && doc.data().fotoPerfil) ? doc.data().fotoPerfil : (user.photoURL || "");
+                db.collection("addons").doc(addonActualId).collection("comentarios").add({
+                    usuario: user.displayName || "Miner",
+                    avatar: foto,
+               
