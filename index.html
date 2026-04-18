@@ -21,7 +21,7 @@
         .loading-spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid #fff; width: 16px; height: 16px; animation: spin 1s linear infinite; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .profile-upload { position: relative; cursor: pointer; }
-        .profile-upload::after { content: '📷'; position: absolute; bottom: 0; right: 0; background: #3b82f6; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+        .profile-upload::after { content: '📷'; position: absolute; bottom: 0; right: 0; background: #3b82f6; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid #0b0b0b; }
     </style>
 </head>
 <body class="max-w-lg mx-auto pb-24">
@@ -64,6 +64,7 @@
                 <div>
                     <p id="user-name" class="font-black italic text-sm truncate w-32">Miner</p>
                     <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Toca la foto para cambiar</p>
+                    <div id="avatar-loader" class="loading-spinner mt-1"></div>
                 </div>
             </div>
             <div class="space-y-2">
@@ -105,7 +106,6 @@
                 <span class="absolute left-4 top-4">🔍</span>
             </div>
         </div>
-        
         <div id="filtros-container" class="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar border-b border-white/5">
             <button onclick="ordenar('recientes')" class="flex-none px-4 py-2 rounded-xl bg-blue-600/20 border border-blue-500/30 text-[10px] font-black uppercase">✨ Recientes</button>
             <button onclick="ordenar('populares')" class="flex-none px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase">🔥 Populares</button>
@@ -158,6 +158,52 @@
         let addonActualId = null;
         let unsubscribeComentarios = null;
 
+        // --- FUNCIÓN DE COMPRESIÓN Y SEGURIDAD ---
+        function cambiarFotoPerfil(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Filtro básico de seguridad por tamaño y tipo
+            if (file.size > 5 * 1024 * 1024) { // 5MB max
+                alert("La foto es demasiado pesada para el sistema de seguridad.");
+                return;
+            }
+
+            const loader = document.getElementById('avatar-loader');
+            loader.style.display = "block";
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    // COMPRESIÓN: Reducimos la imagen a un tamaño pequeño (150x150)
+                    // Esto evita el error "URL too long" y quita metadatos ocultos
+                    const canvas = document.createElement('canvas');
+                    const size = 150; 
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, size, size);
+                    
+                    // Bajamos la calidad al 60% para que la cadena sea corta
+                    const dataUrlReducida = canvas.toDataURL('image/jpeg', 0.6);
+
+                    const user = auth.currentUser;
+                    user.updateProfile({ photoURL: dataUrlReducida }).then(() => {
+                        document.getElementById('user-avatar').src = dataUrlReducida;
+                        loader.style.display = "none";
+                        alert("¡Foto de perfil actualizada con éxito!");
+                    }).catch(err => {
+                        loader.style.display = "none";
+                        alert("Error: " + err.message);
+                    });
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- RESTO DE FUNCIONES ---
         function toggleMenu() {
             document.getElementById('sidebar').classList.toggle('active');
             document.getElementById('overlay').classList.toggle('active');
@@ -167,23 +213,6 @@
             document.getElementById('seccion-inicio').classList.toggle('hidden', s !== 'inicio');
             document.getElementById('seccion-publicar').classList.toggle('hidden', s !== 'publicar');
             if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
-        }
-
-        // --- SISTEMA DE FOTO DESDE GALERÍA ---
-        function cambiarFotoPerfil(input) {
-            const file = input.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const user = auth.currentUser;
-                // Usamos Base64 directamente para la foto de perfil en Auth
-                user.updateProfile({ photoURL: e.target.result }).then(() => {
-                    document.getElementById('user-avatar').src = e.target.result;
-                    alert("¡Foto actualizada!");
-                }).catch(err => alert("Error al subir foto: " + err.message));
-            };
-            reader.readAsDataURL(file);
         }
 
         function actualizarNombre() {
@@ -203,7 +232,6 @@
             document.getElementById('btn-logout').classList.toggle('hidden', !logueado);
             document.getElementById('inputs-auth').classList.toggle('hidden', logueado);
             document.getElementById('user-info').classList.toggle('hidden', !logueado);
-
             if(user) {
                 document.getElementById('user-name').innerText = user.displayName || "Miner";
                 document.getElementById('user-avatar').src = user.photoURL || "https://via.placeholder.com/150";
@@ -214,7 +242,6 @@
             }
         });
 
-        // --- FILTROS REGRESADOS ---
         function ordenar(modo) {
             let copia = [...todosLosAddons];
             if(modo === 'recientes') copia.sort((a,b) => b.fecha - a.fecha);
@@ -223,7 +250,6 @@
             mostrarAddons(copia);
         }
 
-        // --- LÓGICA BASE ---
         db.collection("addons").orderBy("fecha", "desc").onSnapshot(s => {
             todosLosAddons = s.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             mostrarAddons(todosLosAddons);
@@ -237,7 +263,7 @@
                 const card = document.createElement('div');
                 card.className = "liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5 mb-4";
                 card.onclick = () => verDetalle(d);
-                card.innerHTML = `<img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10"><div class="flex-1"><div class="flex justify-between items-center"><span class="text-[8px] text-blue-400 font-bold uppercase bg-blue-500/10 px-2 py-0.5 rounded-full">${d.categoria || 'Addon'}</span><div class="flex items-center"><span class="text-[9px] text-gray-500 italic">🔥 ${d.descargas || 0}</span>${btnBorrar}</div></div><h3 class="text-lg font-black italic uppercase leading-tight mt-1">${d.titulo}</h3><p class="text-[7px] text-gray-500 uppercase">By: ${d.autor}</p></div>`;
+                card.innerHTML = `<img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10"><div class="flex-1"><div class="flex justify-between items-center"><span class="text-[8px] text-blue-400 font-bold uppercase bg-blue-500/10 px-2 py-0.5 rounded-full">Addon</span><div class="flex items-center"><span class="text-[9px] text-gray-500 italic">🔥 ${d.descargas || 0}</span>${btnBorrar}</div></div><h3 class="text-lg font-black italic uppercase leading-tight mt-1">${d.titulo}</h3><p class="text-[7px] text-gray-500 uppercase">By: ${d.autor}</p></div>`;
                 cont.appendChild(card);
             });
         }
@@ -247,7 +273,7 @@
             document.getElementById('modal-title').innerText = d.titulo;
             document.getElementById('modal-desc').innerText = d.descripcion;
             document.getElementById('modal-img').src = d.foto;
-            document.getElementById('modal-tag').innerText = d.categoria || 'Addon';
+            document.getElementById('modal-tag').innerText = 'Addon';
             document.getElementById('modal-fecha').innerText = "Subido el: " + new Date(d.fecha).toLocaleDateString();
             document.getElementById('modal-autor').innerText = "Creado por: " + d.autor;
             document.getElementById('modal-link').href = d.link;
