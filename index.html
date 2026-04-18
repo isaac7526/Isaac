@@ -100,14 +100,20 @@
 
     <main class="p-4">
         <div id="seccion-inicio"><div id="lista-addons" class="space-y-4"></div></div>
+        
         <div id="seccion-publicar" class="hidden">
             <div class="liquid-glass p-6">
                 <form onsubmit="event.preventDefault(); publicarAddon();" class="space-y-4">
                     <input type="text" id="add-title" placeholder="Nombre del Addon" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none" required>
                     <textarea id="add-desc" placeholder="Descripción..." class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 h-24 outline-none" required></textarea>
                     <input type="text" id="add-link" placeholder="Enlace Directo" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none" required>
-                    <input type="file" id="add-image" accept="image/*" class="w-full text-xs" required>
-                    <button type="submit" id="btn-subir" class="btn-primary w-full py-4 rounded-2xl font-black">PUBLICAR</button>
+                    
+                    <label class="w-full bg-white/5 p-8 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 transition">
+                        <span id="file-label-text" class="text-[10px] font-black uppercase tracking-widest">Seleccionar Miniatura</span>
+                        <input type="file" id="add-image" accept="image/*" class="hidden" onchange="if(this.files[0]) document.getElementById('file-label-text').innerText='✅ LISTO'" required>
+                    </label>
+
+                    <button type="submit" id="btn-subir" class="btn-primary w-full py-4 rounded-2xl font-black uppercase tracking-widest">PUBLICAR</button>
                 </form>
             </div>
         </div>
@@ -132,10 +138,8 @@
         const provider = new firebase.auth.GoogleAuthProvider();
 
         let todosLosAddons = [];
-        let esAdmin = false;
         let addonActualId = null;
 
-        // --- FUNCIONES CORE ---
         function toggleMenu() {
             document.getElementById('sidebar').classList.toggle('active');
             document.getElementById('overlay').classList.toggle('active');
@@ -148,7 +152,6 @@
             document.getElementById('overlay').classList.remove('active');
         }
 
-        // --- CARGA DE DATOS ---
         db.collection("addons").orderBy("fecha", "desc").onSnapshot(s => {
             todosLosAddons = s.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             mostrarAddons(todosLosAddons);
@@ -167,14 +170,12 @@
             });
         }
 
-        // --- SISTEMA DE USUARIOS Y PERFIL ---
         auth.onAuthStateChanged(user => {
             const logueado = !!user;
             document.getElementById('user-info').classList.toggle('hidden', !logueado);
             document.getElementById('btn-logout').classList.toggle('hidden', !logueado);
             document.getElementById('btn-menu-publicar').classList.toggle('hidden', !logueado);
             document.getElementById('inputs-auth').classList.toggle('hidden', logueado);
-            
             if(user) {
                 document.getElementById('user-name').innerText = user.displayName || "Miner";
                 db.collection("usuarios").doc(user.uid).onSnapshot(doc => {
@@ -190,8 +191,6 @@
         function cambiarFotoPerfil(input) {
             const file = input.files[0];
             if (!file) return;
-            const loader = document.getElementById('avatar-loader');
-            loader.style.display = "block";
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
@@ -204,7 +203,7 @@
                     db.collection("usuarios").doc(auth.currentUser.uid).set({
                         fotoPerfil: dataUrl,
                         nombre: auth.currentUser.displayName || "Miner"
-                    }, { merge: true }).then(() => { loader.style.display = "none"; });
+                    }, { merge: true });
                 };
             };
             reader.readAsDataURL(file);
@@ -214,14 +213,12 @@
             const nuevo = document.getElementById('edit-name').value;
             if (auth.currentUser && nuevo) {
                 auth.currentUser.updateProfile({ displayName: nuevo }).then(() => {
-                    document.getElementById('user-name').innerText = nuevo;
                     db.collection("usuarios").doc(auth.currentUser.uid).set({ nombre: nuevo }, { merge: true });
                     alert("¡Nombre actualizado!");
                 });
             }
         }
 
-        // --- COMENTARIOS Y DETALLES ---
         function verDetalle(d) {
             addonActualId = d.id;
             document.getElementById('modal-title').innerText = d.titulo;
@@ -262,7 +259,6 @@
             });
         }
 
-        // --- FILTROS, AUTH Y SUBIDA ---
         function ordenar(modo) {
             let copia = [...todosLosAddons];
             if(modo === 'recientes') copia.sort((a,b) => b.fecha - a.fecha);
@@ -286,14 +282,21 @@
             if(!imgInput) return;
             const reader = new FileReader();
             reader.onload = (e) => {
-                db.collection("addons").add({
-                    titulo: document.getElementById('add-title').value,
-                    descripcion: document.getElementById('add-desc').value,
-                    link: document.getElementById('add-link').value,
-                    foto: e.target.result,
-                    fecha: Date.now(),
-                    autor: auth.currentUser ? auth.currentUser.displayName : "Miner"
-                }).then(() => location.reload());
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 400; canvas.height = 250; // Miniatura optimizada
+                    canvas.getContext('2d').drawImage(img, 0, 0, 400, 250);
+                    db.collection("addons").add({
+                        titulo: document.getElementById('add-title').value,
+                        descripcion: document.getElementById('add-desc').value,
+                        link: document.getElementById('add-link').value,
+                        foto: canvas.toDataURL('image/jpeg', 0.7),
+                        fecha: Date.now(),
+                        autor: auth.currentUser ? auth.currentUser.displayName : "Miner"
+                    }).then(() => location.reload());
+                };
             };
             reader.readAsDataURL(imgInput);
         }
