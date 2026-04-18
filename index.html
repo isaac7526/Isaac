@@ -13,15 +13,13 @@
         .addon-card { transition: all 0.3s ease; cursor: pointer; }
         .addon-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.07); border-color: #3b82f6; }
         .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); transition: 0.2s; }
-        .btn-primary:active { scale: 0.95; }
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 400; backdrop-filter: blur(4px); }
         .overlay.active { display: block; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
         .header-fix { position: sticky; top: 0; z-index: 100; background: #0b0b0b; width: 100%; }
         .loading-spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid #fff; width: 16px; height: 16px; animation: spin 1s linear infinite; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .profile-upload { position: relative; cursor: pointer; }
-        .profile-upload::after { content: '📷'; position: absolute; bottom: 0; right: 0; background: #3b82f6; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid #0b0b0b; }
+        .profile-upload::after { content: '📷'; position: absolute; bottom: 0; right: 0; background: #3b82f6; border-radius: 50%; width: 22px; height: 22px; font-size: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid #0b0b0b; }
     </style>
 </head>
 <body class="max-w-lg mx-auto pb-24">
@@ -29,30 +27,19 @@
     <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
     <div id="modal-detalle" class="fixed inset-0 z-[600] hidden flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
-        <div class="liquid-glass w-full max-w-sm p-6 relative max-h-[90vh] overflow-y-auto no-scrollbar">
-            <button onclick="cerrarModal()" class="absolute top-4 right-4 text-2xl hover:text-red-500 z-10">✕</button>
-            <img id="modal-img" src="" class="w-full h-52 object-cover rounded-2xl mb-4 border border-white/10 shadow-xl">
-            <div id="modal-tag" class="inline-block px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold mb-2 uppercase"></div>
+        <div class="liquid-glass w-full max-w-sm p-6 relative max-h-[90vh] overflow-y-auto">
+            <button onclick="cerrarModal()" class="absolute top-4 right-4 text-2xl">✕</button>
+            <img id="modal-img" src="" class="w-full h-52 object-cover rounded-2xl mb-4">
             <h2 id="modal-title" class="text-2xl font-black italic uppercase mb-2"></h2>
             <p id="modal-desc" class="text-sm text-gray-400 bg-white/5 p-4 rounded-xl mb-4"></p>
-            <div class="flex justify-between text-[10px] text-gray-500 italic mb-4">
-                <span id="modal-fecha"></span>
-                <span id="modal-autor"></span>
-            </div>
-            <a id="modal-link" href="#" target="_blank" class="btn-primary block w-full py-4 rounded-2xl font-black text-center mb-6 shadow-lg uppercase tracking-widest">DESCARGAR</a>
-            <div class="border-t border-white/10 pt-4">
-                <h3 class="text-xs font-black uppercase text-blue-400 mb-4 italic text-center">Comentarios</h3>
-                <div id="comentar-form" class="hidden mb-6 flex gap-2">
-                    <input type="text" id="nuevo-comentario" placeholder="Escribe algo..." class="flex-1 bg-white/5 p-3 rounded-xl border border-white/10 text-xs outline-none">
-                    <button onclick="enviarComentario()" class="bg-blue-600 px-4 rounded-xl text-[10px] font-black uppercase">Post</button>
-                </div>
-                <div id="lista-comentarios" class="space-y-3"></div>
-            </div>
+            <a id="modal-link" href="#" target="_blank" class="btn-primary block w-full py-4 rounded-2xl font-black text-center mb-6 uppercase">DESCARGAR</a>
+            <div id="lista-comentarios" class="space-y-3 border-t border-white/10 pt-4"></div>
         </div>
     </div>
 
     <div id="sidebar" class="liquid-glass menu-lateral p-6 m-2 shadow-2xl overflow-y-auto">
-        <h2 class="font-black text-blue-400 text-3xl italic mb-6 tracking-tighter">MC ENDER</h2>
+        <h2 class="font-black text-blue-400 text-3xl italic mb-6">MC ENDER</h2>
+        
         <div id="user-info" class="hidden mb-6 p-4 bg-white/5 rounded-3xl border border-white/10">
             <div class="flex items-center gap-3 mb-4">
                 <label class="profile-upload">
@@ -61,52 +48,30 @@
                 </label>
                 <div>
                     <p id="user-name" class="font-black italic text-sm truncate w-32">Miner</p>
-                    <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Toca la foto para cambiar</p>
-                    <div id="avatar-loader" class="loading-spinner mt-1"></div>
+                    <div id="avatar-loader" class="loading-spinner"></div>
                 </div>
             </div>
-            <div class="space-y-2">
-                <input type="text" id="edit-name" placeholder="Cambiar nombre..." class="w-full bg-black/20 p-2 rounded-xl border border-white/5 text-[10px] outline-none">
-                <button onclick="actualizarNombre()" class="w-full py-2 bg-blue-600/20 border border-blue-500/40 rounded-xl text-[8px] font-black uppercase tracking-widest">Guardar Nombre</button>
-            </div>
+            <button onclick="actualizarNombre()" class="w-full py-2 bg-blue-600/20 border border-blue-500/40 rounded-xl text-[8px] font-black uppercase">Guardar Nombre</button>
         </div>
+
         <nav class="space-y-3">
-            <button onclick="irA('inicio')" class="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition">🏠 Inicio</button>
-            <button id="btn-menu-publicar" onclick="irA('publicar')" class="hidden w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition border border-blue-500/20">🚀 Publicar Addon</button>
-            <hr class="border-white/10 my-4">
+            <button onclick="irA('inicio')" class="w-full text-left p-4 rounded-2xl bg-white/5 font-bold">🏠 Inicio</button>
+            <button id="btn-menu-publicar" onclick="irA('publicar')" class="hidden w-full text-left p-4 rounded-2xl bg-white/5 border border-blue-500/20 font-bold">🚀 Publicar</button>
+            <hr class="border-white/10">
             <div id="auth-container">
-                <div id="inputs-auth" class="space-y-2 mb-4">
-                    <input type="email" id="auth-email" placeholder="Correo" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none text-sm">
-                    <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none text-sm">
-                    <div class="grid grid-cols-2 gap-2 mt-4">
-                        <button onclick="loginConEmail()" class="p-3 rounded-xl bg-blue-600/20 font-bold text-[10px] uppercase">Entrar</button>
-                        <button onclick="registroConEmail()" class="p-3 rounded-xl bg-white/5 font-bold text-[10px] uppercase">Registro</button>
-                    </div>
-                </div>
-                <button onclick="iniciarSesionGoogle()" class="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition border border-white/10 text-sm">🔵 Google Auth</button>
-                <button id="btn-logout" onclick="cerrarSesion()" class="hidden w-full text-left p-4 rounded-2xl bg-red-600/10 hover:bg-red-600/20 font-bold text-red-400">🚪 Cerrar Sesión</button>
+                <button id="btn-login-google" onclick="iniciarSesionGoogle()" class="w-full text-left p-4 rounded-2xl bg-white/5 font-bold text-sm">🔵 Google Auth</button>
+                <button id="btn-logout" onclick="cerrarSesion()" class="hidden w-full text-left p-4 rounded-2xl bg-red-600/10 font-bold text-red-400">🚪 Cerrar Sesión</button>
             </div>
         </nav>
     </div>
 
     <div class="header-fix">
-        <header class="p-4 flex items-center justify-between bg-[#0b0b0b]/80 backdrop-blur-xl">
+        <header class="p-4 flex items-center justify-between">
             <button onclick="toggleMenu()" class="liquid-glass p-3 px-5 text-xl relative z-[110]">☰</button>
-            <div class="text-right">
-                <h1 class="text-xl font-black text-blue-400 italic tracking-tighter">MC ENDER</h1>
-                <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Official Website</p>
-            </div>
+            <h1 class="text-xl font-black text-blue-400 italic">MC ENDER</h1>
         </header>
         <div class="px-4 pb-2">
-            <div class="relative">
-                <input type="text" id="busqueda" oninput="buscarAddons()" placeholder="Buscar addons..." class="w-full bg-white/5 p-4 pl-12 rounded-2xl border border-white/10 outline-none text-sm">
-                <span class="absolute left-4 top-4">🔍</span>
-            </div>
-        </div>
-        <div id="filtros-container" class="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar border-b border-white/5">
-            <button onclick="ordenar('recientes')" class="flex-none px-4 py-2 rounded-xl bg-blue-600/20 border border-blue-500/30 text-[10px] font-black uppercase">✨ Recientes</button>
-            <button onclick="ordenar('populares')" class="flex-none px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase">🔥 Populares</button>
-            <button onclick="ordenar('antiguos')" class="flex-none px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase">⏳ Antiguos</button>
+            <input type="text" id="busqueda" oninput="buscarAddons()" placeholder="Buscar addons..." class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none text-sm">
         </div>
     </div>
 
@@ -114,19 +79,12 @@
         <div id="seccion-inicio"><div id="lista-addons" class="space-y-4"></div></div>
         <div id="seccion-publicar" class="hidden">
             <div class="liquid-glass p-6">
-                <h2 class="text-xl font-black mb-6 text-blue-400 italic text-center uppercase">Subir Contenido</h2>
-                <form id="form-publicar" onsubmit="event.preventDefault(); publicarAddon();" class="space-y-4">
-                    <input type="text" id="add-title" placeholder="Nombre" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none" required>
-                    <textarea id="add-desc" placeholder="Descripción..." class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 h-24 outline-none" required></textarea>
-                    <input type="text" id="add-link" placeholder="Link de descarga" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none" required>
-                    <label class="w-full bg-white/5 p-6 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center cursor-pointer">
-                        <span id="file-name" class="text-[10px] font-black uppercase">Seleccionar Miniatura</span>
-                        <input type="file" id="add-image" accept="image/*" class="hidden" onchange="if(this.files[0]) document.getElementById('file-name').innerText='✅ LISTO'" required>
-                    </label>
-                    <button type="submit" id="btn-subir" class="btn-primary w-full py-4 rounded-2xl font-black flex items-center justify-center gap-3">
-                        <span id="btn-text">PUBLICAR</span>
-                        <div id="btn-loader" class="loading-spinner"></div>
-                    </button>
+                <form onsubmit="event.preventDefault(); publicarAddon();" class="space-y-4">
+                    <input type="text" id="add-title" placeholder="Nombre" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10" required>
+                    <textarea id="add-desc" placeholder="Descripción..." class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 h-24" required></textarea>
+                    <input type="text" id="add-link" placeholder="Link de descarga" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10" required>
+                    <input type="file" id="add-image" accept="image/*" class="w-full text-xs" required>
+                    <button type="submit" id="btn-subir" class="btn-primary w-full py-4 rounded-2xl font-black">PUBLICAR</button>
                 </form>
             </div>
         </div>
@@ -152,71 +110,72 @@
 
         let todosLosAddons = [];
         let esAdmin = false;
-        let addonActualId = null;
-        let unsubscribeComentarios = null;
 
+        // --- 1. FUNCIÓN MENU (ESTA NO PUEDE FALLAR) ---
         function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('overlay').classList.toggle('active');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
         }
 
         function irA(s) {
             document.getElementById('seccion-inicio').classList.toggle('hidden', s !== 'inicio');
             document.getElementById('seccion-publicar').classList.toggle('hidden', s !== 'publicar');
-            if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
+            toggleMenu();
         }
 
-        // --- CARGA DE ADDONS SIEMPRE ACTIVA ---
+        // --- 2. CARGA DE ADDONS (INDEPENDIENTE) ---
         db.collection("addons").orderBy("fecha", "desc").onSnapshot(s => {
             todosLosAddons = s.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             mostrarAddons(todosLosAddons);
-        }, err => console.log("Error cargando addons:", err));
+        });
 
         function mostrarAddons(lista) {
             const cont = document.getElementById('lista-addons');
             if(!cont) return;
             cont.innerHTML = "";
             lista.forEach(d => {
-                const btnBorrar = esAdmin ? `<button onclick="event.stopPropagation(); borrarAddon('${d.id}')" class="text-[10px] bg-red-500/20 text-red-400 px-3 py-1 rounded-lg ml-2">🗑️</button>` : "";
                 const card = document.createElement('div');
-                card.className = "liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5 mb-4";
+                card.className = "liquid-glass p-3 flex gap-4 items-center addon-card";
                 card.onclick = () => verDetalle(d);
-                card.innerHTML = `<img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10"><div class="flex-1"><div class="flex justify-between items-center"><span class="text-[8px] text-blue-400 font-bold uppercase bg-blue-500/10 px-2 py-0.5 rounded-full">Addon</span><div class="flex items-center"><span class="text-[9px] text-gray-500 italic">🔥 ${d.descargas || 0}</span>${btnBorrar}</div></div><h3 class="text-lg font-black italic uppercase leading-tight mt-1">${d.titulo}</h3><p class="text-[7px] text-gray-500 uppercase">By: ${d.autor}</p></div>`;
+                card.innerHTML = `
+                    <img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-black italic uppercase">${d.titulo}</h3>
+                        <p class="text-[7px] text-gray-500">By: ${d.autor}</p>
+                    </div>`;
                 cont.appendChild(card);
             });
         }
 
-        // --- SISTEMA DE USUARIOS ---
+        // --- 3. SISTEMA DE USUARIOS ---
         auth.onAuthStateChanged(user => {
-            const logueado = !!user;
-            document.getElementById('btn-menu-publicar').classList.toggle('hidden', !logueado);
-            document.getElementById('btn-logout').classList.toggle('hidden', !logueado);
-            document.getElementById('inputs-auth').classList.toggle('hidden', logueado);
-            document.getElementById('user-info').classList.toggle('hidden', !logueado);
-            
             if(user) {
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('btn-logout').classList.remove('hidden');
+                document.getElementById('btn-menu-publicar').classList.remove('hidden');
+                document.getElementById('btn-login-google').classList.add('hidden');
                 document.getElementById('user-name').innerText = user.displayName || "Miner";
-                db.collection("usuarios").doc(user.uid).onSnapshot(doc => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        if(data.fotoPerfil) document.getElementById('user-avatar').src = data.fotoPerfil;
-                        esAdmin = data.rol === "admin";
+                
+                db.collection("usuarios").doc(user.uid).get().then(doc => {
+                    if (doc.exists && doc.data().fotoPerfil) {
+                        document.getElementById('user-avatar').src = doc.data().fotoPerfil;
                     } else {
                         document.getElementById('user-avatar').src = user.photoURL || "https://via.placeholder.com/150";
                     }
-                    mostrarAddons(todosLosAddons);
                 });
             } else {
-                esAdmin = false;
-                mostrarAddons(todosLosAddons);
+                document.getElementById('user-info').classList.add('hidden');
+                document.getElementById('btn-logout').classList.add('hidden');
+                document.getElementById('btn-menu-publicar').classList.add('hidden');
+                document.getElementById('btn-login-google').classList.remove('hidden');
             }
         });
 
         function cambiarFotoPerfil(input) {
             const file = input.files[0];
-            if (!file || !auth.currentUser) return;
-            const loader = document.getElementById('avatar-loader');
-            loader.style.display = "block";
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
@@ -230,71 +189,28 @@
                         fotoPerfil: dataUrl,
                         nombre: auth.currentUser.displayName || "Miner"
                     }, { merge: true }).then(() => {
-                        loader.style.display = "none";
-                    }).catch(() => loader.style.display = "none");
+                        document.getElementById('user-avatar').src = dataUrl;
+                    });
                 };
             };
             reader.readAsDataURL(file);
         }
 
-        function actualizarNombre() {
-            const user = auth.currentUser;
-            const nuevo = document.getElementById('edit-name').value;
-            if (user && nuevo) {
-                user.updateProfile({ displayName: nuevo }).then(() => {
-                    document.getElementById('user-name').innerText = nuevo;
-                    db.collection("usuarios").doc(user.uid).set({ nombre: nuevo }, { merge: true });
-                    alert("Nombre actualizado.");
-                });
-            }
-        }
-
-        function ordenar(modo) {
-            let copia = [...todosLosAddons];
-            if(modo === 'recientes') copia.sort((a,b) => b.fecha - a.fecha);
-            if(modo === 'antiguos') copia.sort((a,b) => a.fecha - b.fecha);
-            if(modo === 'populares') copia.sort((a,b) => (b.descargas || 0) - (a.descargas || 0));
-            mostrarAddons(copia);
-        }
-
         function verDetalle(d) {
-            addonActualId = d.id;
             document.getElementById('modal-title').innerText = d.titulo;
             document.getElementById('modal-desc').innerText = d.descripcion;
             document.getElementById('modal-img').src = d.foto;
-            document.getElementById('modal-tag').innerText = 'Addon';
-            document.getElementById('modal-fecha').innerText = "Subido el: " + new Date(d.fecha).toLocaleDateString();
-            document.getElementById('modal-autor').innerText = "Creado por: " + d.autor;
             document.getElementById('modal-link').href = d.link;
-            document.getElementById('modal-link').onclick = () => db.collection("addons").doc(d.id).update({ descargas: firebase.firestore.FieldValue.increment(1) });
-            cargarComentarios(d.id);
-            document.getElementById('comentar-form').classList.toggle('hidden', !auth.currentUser);
             document.getElementById('modal-detalle').classList.remove('hidden');
         }
 
-        function cargarComentarios(addonId) {
-            const lista = document.getElementById('lista-comentarios');
-            if(unsubscribeComentarios) unsubscribeComentarios();
-            unsubscribeComentarios = db.collection("addons").doc(addonId).collection("comentarios").orderBy("fecha", "desc").onSnapshot(snap => {
-                lista.innerHTML = "";
-                if(snap.empty) lista.innerHTML = "<p class='text-[9px] text-center text-gray-600'>Sin comentarios.</p>";
-                snap.forEach(doc => {
-                    const c = doc.data();
-                    const div = document.createElement('div');
-                    div.className = "bg-white/5 p-3 rounded-2xl border border-white/5 flex gap-3";
-                    div.innerHTML = `<img src="${c.avatar || 'https://via.placeholder.com/150'}" class="w-8 h-8 rounded-full border border-blue-500/30 object-cover"><div><p class="text-[9px] font-black text-blue-400 italic">${c.usuario}</p><p class="text-[10px] text-gray-300">${c.texto}</p></div>`;
-                    lista.appendChild(div);
-                });
-            });
+        function cerrarModal() { document.getElementById('modal-detalle').classList.add('hidden'); }
+        function iniciarSesionGoogle() { auth.signInWithPopup(provider); }
+        function cerrarSesion() { auth.signOut().then(() => location.reload()); }
+        function buscarAddons() {
+            const val = document.getElementById('busqueda').value.toLowerCase();
+            mostrarAddons(todosLosAddons.filter(a => a.titulo.toLowerCase().includes(val)));
         }
-
-        function enviarComentario() {
-            const input = document.getElementById('nuevo-comentario');
-            if (!input.value.trim() || !auth.currentUser) return;
-            const user = auth.currentUser;
-            db.collection("usuarios").doc(user.uid).get().then(doc => {
-                const foto = (doc.exists && doc.data().fotoPerfil) ? doc.data().fotoPerfil : (user.photoURL || "");
-                db.collection("addons").doc(addonActualId).collection("comentarios").add({
-                    usuario: user.displayName || "Miner",
-                    avatar: foto,
-               
+    </script>
+</body>
+</html>
