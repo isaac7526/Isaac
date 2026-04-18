@@ -20,6 +20,8 @@
         .header-fix { position: sticky; top: 0; z-index: 100; background: #0b0b0b; width: 100%; }
         .loading-spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid #fff; width: 16px; height: 16px; animation: spin 1s linear infinite; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .profile-upload { position: relative; cursor: pointer; }
+        .profile-upload::after { content: '📷'; position: absolute; bottom: 0; right: 0; background: #3b82f6; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body class="max-w-lg mx-auto pb-24">
@@ -38,13 +40,13 @@
                 <span id="modal-autor"></span>
             </div>
             <a id="modal-link" href="#" target="_blank" class="btn-primary block w-full py-4 rounded-2xl font-black text-center mb-6 shadow-lg uppercase tracking-widest">DESCARGAR</a>
+            
             <div class="border-t border-white/10 pt-4">
-                <h3 class="text-xs font-black uppercase text-blue-400 mb-4 italic">Comentarios</h3>
+                <h3 class="text-xs font-black uppercase text-blue-400 mb-4 italic text-center">Comentarios</h3>
                 <div id="comentar-form" class="hidden mb-6 flex gap-2">
                     <input type="text" id="nuevo-comentario" placeholder="Escribe algo..." class="flex-1 bg-white/5 p-3 rounded-xl border border-white/10 text-xs outline-none">
-                    <button onclick="enviarComentario()" class="bg-blue-600 px-4 rounded-xl text-[10px] font-black">POST</button>
+                    <button onclick="enviarComentario()" class="bg-blue-600 px-4 rounded-xl text-[10px] font-black uppercase">Post</button>
                 </div>
-                <p id="comentar-login-msg" class="text-[9px] text-gray-500 italic text-center">Inicia sesión para comentar.</p>
                 <div id="lista-comentarios" class="space-y-3"></div>
             </div>
         </div>
@@ -55,16 +57,18 @@
         
         <div id="user-info" class="hidden mb-6 p-4 bg-white/5 rounded-3xl border border-white/10">
             <div class="flex items-center gap-3 mb-4">
-                <img id="user-avatar" src="https://via.placeholder.com/150" class="w-12 h-12 rounded-full border-2 border-blue-500 object-cover">
+                <label class="profile-upload">
+                    <img id="user-avatar" src="https://via.placeholder.com/150" class="w-14 h-14 rounded-full border-2 border-blue-500 object-cover">
+                    <input type="file" id="input-avatar" accept="image/*" class="hidden" onchange="cambiarFotoPerfil(this)">
+                </label>
                 <div>
                     <p id="user-name" class="font-black italic text-sm truncate w-32">Miner</p>
-                    <p class="text-[8px] text-gray-500 uppercase font-bold tracking-widest">Usuario Verificado</p>
+                    <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Toca la foto para cambiar</p>
                 </div>
             </div>
             <div class="space-y-2">
-                <input type="text" id="edit-name" placeholder="Nuevo nombre" class="w-full bg-black/20 p-2 rounded-xl border border-white/5 text-[10px] outline-none">
-                <input type="text" id="edit-photo" placeholder="URL de imagen" class="w-full bg-black/20 p-2 rounded-xl border border-white/5 text-[10px] outline-none">
-                <button onclick="actualizarPerfil()" class="w-full py-2 bg-blue-600 rounded-xl text-[8px] font-black uppercase tracking-widest">Actualizar Perfil</button>
+                <input type="text" id="edit-name" placeholder="Cambiar nombre..." class="w-full bg-black/20 p-2 rounded-xl border border-white/5 text-[10px] outline-none">
+                <button onclick="actualizarNombre()" class="w-full py-2 bg-blue-600/20 border border-blue-500/40 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Guardar Nombre</button>
             </div>
         </div>
 
@@ -89,21 +93,23 @@
 
     <div class="header-fix">
         <header class="p-4 flex items-center justify-between bg-[#0b0b0b]/80 backdrop-blur-xl">
-            <button onclick="toggleMenu()" class="liquid-glass p-3 px-5 text-xl relative z-[110] active:scale-90 transition">☰</button>
+            <button onclick="toggleMenu()" class="liquid-glass p-3 px-5 text-xl relative z-[110]">☰</button>
             <div class="text-right">
                 <h1 class="text-xl font-black text-blue-400 italic tracking-tighter">MC ENDER</h1>
-                <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest text-center">Official Website</p>
+                <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Official Website</p>
             </div>
         </header>
         <div class="px-4 pb-2">
             <div class="relative">
                 <input type="text" id="busqueda" oninput="buscarAddons()" placeholder="Buscar addons..." class="w-full bg-white/5 p-4 pl-12 rounded-2xl border border-white/10 outline-none text-sm">
-                <span class="absolute left-4 top-4 text-gray-500">🔍</span>
+                <span class="absolute left-4 top-4">🔍</span>
             </div>
         </div>
+        
         <div id="filtros-container" class="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar border-b border-white/5">
             <button onclick="ordenar('recientes')" class="flex-none px-4 py-2 rounded-xl bg-blue-600/20 border border-blue-500/30 text-[10px] font-black uppercase">✨ Recientes</button>
             <button onclick="ordenar('populares')" class="flex-none px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase">🔥 Populares</button>
+            <button onclick="ordenar('antiguos')" class="flex-none px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase">⏳ Antiguos</button>
         </div>
     </div>
 
@@ -111,22 +117,17 @@
         <div id="seccion-inicio"><div id="lista-addons" class="space-y-4"></div></div>
         <div id="seccion-publicar" class="hidden">
             <div class="liquid-glass p-6">
-                <h2 class="text-xl font-black mb-6 text-blue-400 italic text-center uppercase text-center">Subir Contenido</h2>
+                <h2 class="text-xl font-black mb-6 text-blue-400 italic text-center uppercase">Subir Contenido</h2>
                 <form id="form-publicar" onsubmit="event.preventDefault(); publicarAddon();" class="space-y-4">
-                    <input type="text" id="add-title" placeholder="Nombre del Addon" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none" required>
-                    <select id="add-category" class="w-full bg-[#1a1a2e] p-4 rounded-2xl border border-white/10 outline-none text-gray-400">
-                        <option value="Addon">Tipo: Addon</option>
-                        <option value="Texture">Tipo: Textura</option>
-                        <option value="Map">Tipo: Mapa</option>
-                    </select>
-                    <textarea id="add-desc" placeholder="Descripción breve..." class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 h-24 outline-none" required></textarea>
-                    <input type="text" id="add-link" placeholder="Link Directo" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none" required>
+                    <input type="text" id="add-title" placeholder="Nombre" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none" required>
+                    <textarea id="add-desc" placeholder="Descripción..." class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 h-24 outline-none" required></textarea>
+                    <input type="text" id="add-link" placeholder="Link de descarga" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none" required>
                     <label class="w-full bg-white/5 p-6 rounded-3xl border-2 border-dashed border-white/10 flex flex-col items-center cursor-pointer">
-                        <span id="file-name" class="text-[10px] font-black uppercase text-gray-400">Seleccionar Miniatura</span>
-                        <input type="file" id="add-image" accept="image/*" class="hidden" onchange="actualizarNombreArchivo(this)" required>
+                        <span id="file-name" class="text-[10px] font-black uppercase">Seleccionar Miniatura</span>
+                        <input type="file" id="add-image" accept="image/*" class="hidden" onchange="if(this.files[0]) document.getElementById('file-name').innerText='✅ LISTO'" required>
                     </label>
                     <button type="submit" id="btn-subir" class="btn-primary w-full py-4 rounded-2xl font-black flex items-center justify-center gap-3">
-                        <span id="btn-text">PUBLICAR AHORA</span>
+                        <span id="btn-text">PUBLICAR</span>
                         <div id="btn-loader" class="loading-spinner"></div>
                     </button>
                 </form>
@@ -168,20 +169,31 @@
             if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
         }
 
-        // --- SISTEMA DE CUENTAS (ACTUALIZAR PERFIL) ---
-        function actualizarPerfil() {
-            const user = auth.currentUser;
-            const nuevoNombre = document.getElementById('edit-name').value;
-            const nuevaFoto = document.getElementById('edit-photo').value;
+        // --- SISTEMA DE FOTO DESDE GALERÍA ---
+        function cambiarFotoPerfil(input) {
+            const file = input.files[0];
+            if (!file) return;
 
-            if (user) {
-                user.updateProfile({
-                    displayName: nuevoNombre || user.displayName,
-                    photoURL: nuevaFoto || user.photoURL
-                }).then(() => {
-                    alert("¡Perfil actualizado! Recargando...");
-                    location.reload();
-                }).catch(err => alert("Error: " + err.message));
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const user = auth.currentUser;
+                // Usamos Base64 directamente para la foto de perfil en Auth
+                user.updateProfile({ photoURL: e.target.result }).then(() => {
+                    document.getElementById('user-avatar').src = e.target.result;
+                    alert("¡Foto actualizada!");
+                }).catch(err => alert("Error al subir foto: " + err.message));
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function actualizarNombre() {
+            const user = auth.currentUser;
+            const nuevo = document.getElementById('edit-name').value;
+            if (user && nuevo) {
+                user.updateProfile({ displayName: nuevo }).then(() => {
+                    document.getElementById('user-name').innerText = nuevo;
+                    alert("Nombre actualizado.");
+                });
             }
         }
 
@@ -195,7 +207,6 @@
             if(user) {
                 document.getElementById('user-name').innerText = user.displayName || "Miner";
                 document.getElementById('user-avatar').src = user.photoURL || "https://via.placeholder.com/150";
-                
                 db.collection("usuarios").doc(user.uid).onSnapshot(doc => {
                     if (doc.exists) esAdmin = doc.data().rol === "admin";
                     mostrarAddons(todosLosAddons);
@@ -203,60 +214,16 @@
             }
         });
 
-        // --- COMENTARIOS Y DETALLES ---
-        function verDetalle(d) {
-            addonActualId = d.id;
-            document.getElementById('modal-title').innerText = d.titulo;
-            document.getElementById('modal-desc').innerText = d.descripcion;
-            document.getElementById('modal-img').src = d.foto;
-            document.getElementById('modal-tag').innerText = d.categoria;
-            document.getElementById('modal-fecha').innerText = "Fecha: " + new Date(d.fecha).toLocaleDateString();
-            document.getElementById('modal-autor').innerText = "By: " + d.autor;
-            document.getElementById('modal-link').href = d.link;
-
-            const user = auth.currentUser;
-            document.getElementById('comentar-form').classList.toggle('hidden', !user);
-            document.getElementById('comentar-login-msg').classList.toggle('hidden', !!user);
-
-            cargarComentarios(d.id);
-            document.getElementById('modal-detalle').classList.remove('hidden');
+        // --- FILTROS REGRESADOS ---
+        function ordenar(modo) {
+            let copia = [...todosLosAddons];
+            if(modo === 'recientes') copia.sort((a,b) => b.fecha - a.fecha);
+            if(modo === 'antiguos') copia.sort((a,b) => a.fecha - b.fecha);
+            if(modo === 'populares') copia.sort((a,b) => (b.descargas || 0) - (a.descargas || 0));
+            mostrarAddons(copia);
         }
 
-        function cargarComentarios(addonId) {
-            const lista = document.getElementById('lista-comentarios');
-            if(unsubscribeComentarios) unsubscribeComentarios();
-            unsubscribeComentarios = db.collection("addons").doc(addonId).collection("comentarios").orderBy("fecha", "desc").onSnapshot(snap => {
-                lista.innerHTML = "";
-                snap.forEach(doc => {
-                    const c = doc.data();
-                    const div = document.createElement('div');
-                    div.className = "bg-white/5 p-3 rounded-2xl border border-white/5 flex gap-3 items-start";
-                    div.innerHTML = `
-                        <img src="${c.avatar || 'https://via.placeholder.com/150'}" class="w-8 h-8 rounded-full border border-blue-500/30">
-                        <div>
-                            <p class="text-[9px] font-black text-blue-400">${c.usuario}</p>
-                            <p class="text-[10px] text-gray-300">${c.texto}</p>
-                        </div>
-                    `;
-                    lista.appendChild(div);
-                });
-            });
-        }
-
-        function enviarComentario() {
-            const input = document.getElementById('nuevo-comentario');
-            const user = auth.currentUser;
-            if (!input.value.trim() || !user) return;
-
-            db.collection("addons").doc(addonActualId).collection("comentarios").add({
-                usuario: user.displayName || "Miner",
-                avatar: user.photoURL || "",
-                texto: input.value,
-                fecha: Date.now()
-            }).then(() => input.value = "");
-        }
-
-        // --- FUNCIONES BASE ---
+        // --- LÓGICA BASE ---
         db.collection("addons").orderBy("fecha", "desc").onSnapshot(s => {
             todosLosAddons = s.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             mostrarAddons(todosLosAddons);
@@ -268,25 +235,57 @@
             lista.forEach(d => {
                 const btnBorrar = esAdmin ? `<button onclick="event.stopPropagation(); borrarAddon('${d.id}')" class="text-[10px] bg-red-500/20 text-red-400 px-3 py-1 rounded-lg ml-2">🗑️</button>` : "";
                 const card = document.createElement('div');
-                card.className = "liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5";
+                card.className = "liquid-glass p-3 flex gap-4 items-center addon-card border border-white/5 mb-4";
                 card.onclick = () => verDetalle(d);
-                card.innerHTML = `<img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10"><div class="flex-1"><div class="flex justify-between items-center"><span class="text-[8px] text-blue-400 font-bold uppercase bg-blue-500/10 px-2 py-0.5 rounded-full">${d.categoria}</span><div class="flex items-center"><span class="text-[9px] text-gray-500 italic">🔥 ${d.descargas || 0}</span>${btnBorrar}</div></div><h3 class="text-lg font-black italic uppercase leading-tight mt-1">${d.titulo}</h3><div class="flex justify-between text-[7px] text-gray-500 mt-1"><span>By: ${d.autor}</span></div></div>`;
+                card.innerHTML = `<img src="${d.foto}" class="w-20 h-20 rounded-xl object-cover border border-white/10"><div class="flex-1"><div class="flex justify-between items-center"><span class="text-[8px] text-blue-400 font-bold uppercase bg-blue-500/10 px-2 py-0.5 rounded-full">${d.categoria || 'Addon'}</span><div class="flex items-center"><span class="text-[9px] text-gray-500 italic">🔥 ${d.descargas || 0}</span>${btnBorrar}</div></div><h3 class="text-lg font-black italic uppercase leading-tight mt-1">${d.titulo}</h3><p class="text-[7px] text-gray-500 uppercase">By: ${d.autor}</p></div>`;
                 cont.appendChild(card);
             });
         }
 
-        function borrarAddon(id) { if(confirm("¿Borrar?")) db.collection("addons").doc(id).delete(); }
-        function cerrarModal() { document.getElementById('modal-detalle').classList.add('hidden'); }
-        function iniciarSesionGoogle() { auth.signInWithPopup(provider); }
-        function cerrarSesion() { auth.signOut().then(() => location.reload()); }
-        function loginConEmail() { auth.signInWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value); }
-        function registroConEmail() { auth.createUserWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value); }
-        function actualizarNombreArchivo(i) { if(i.files[0]) document.getElementById('file-name').innerText = "✅ LISTO"; }
-        function ordenar(modo) {
-            let copia = [...todosLosAddons];
-            if(modo === 'populares') copia.sort((a,b) => (b.descargas || 0) - (a.descargas || 0));
-            mostrarAddons(copia);
+        function verDetalle(d) {
+            addonActualId = d.id;
+            document.getElementById('modal-title').innerText = d.titulo;
+            document.getElementById('modal-desc').innerText = d.descripcion;
+            document.getElementById('modal-img').src = d.foto;
+            document.getElementById('modal-tag').innerText = d.categoria || 'Addon';
+            document.getElementById('modal-fecha').innerText = "Subido el: " + new Date(d.fecha).toLocaleDateString();
+            document.getElementById('modal-autor').innerText = "Creado por: " + d.autor;
+            document.getElementById('modal-link').href = d.link;
+            document.getElementById('modal-link').onclick = () => db.collection("addons").doc(d.id).update({ descargas: firebase.firestore.FieldValue.increment(1) });
+            cargarComentarios(d.id);
+            const user = auth.currentUser;
+            document.getElementById('comentar-form').classList.toggle('hidden', !user);
+            document.getElementById('modal-detalle').classList.remove('hidden');
         }
+
+        function cargarComentarios(addonId) {
+            const lista = document.getElementById('lista-comentarios');
+            if(unsubscribeComentarios) unsubscribeComentarios();
+            unsubscribeComentarios = db.collection("addons").doc(addonId).collection("comentarios").orderBy("fecha", "desc").onSnapshot(snap => {
+                lista.innerHTML = "";
+                if(snap.empty) lista.innerHTML = "<p class='text-[9px] text-center text-gray-600'>Nadie ha opinado aún.</p>";
+                snap.forEach(doc => {
+                    const c = doc.data();
+                    const div = document.createElement('div');
+                    div.className = "bg-white/5 p-3 rounded-2xl border border-white/5 flex gap-3";
+                    div.innerHTML = `<img src="${c.avatar || 'https://via.placeholder.com/150'}" class="w-8 h-8 rounded-full border border-blue-500/30 object-cover"><div><p class="text-[9px] font-black text-blue-400 italic">${c.usuario}</p><p class="text-[10px] text-gray-300">${c.texto}</p></div>`;
+                    lista.appendChild(div);
+                });
+            });
+        }
+
+        function enviarComentario() {
+            const input = document.getElementById('nuevo-comentario');
+            const user = auth.currentUser;
+            if (!input.value.trim() || !user) return;
+            db.collection("addons").doc(addonActualId).collection("comentarios").add({
+                usuario: user.displayName || "Miner",
+                avatar: user.photoURL || "",
+                texto: input.value,
+                fecha: Date.now()
+            }).then(() => input.value = "");
+        }
+
         function publicarAddon() {
             const btn = document.getElementById('btn-subir');
             const imgInput = document.getElementById('add-image').files[0];
@@ -298,14 +297,25 @@
                     titulo: document.getElementById('add-title').value,
                     descripcion: document.getElementById('add-desc').value,
                     link: document.getElementById('add-link').value,
-                    categoria: document.getElementById('add-category').value,
+                    categoria: "Addon",
                     foto: e.target.result,
                     fecha: Date.now(),
                     descargas: 0,
                     autor: auth.currentUser ? (auth.currentUser.displayName || "Miner") : "Miner"
-                }).then(() => { location.reload(); });
+                }).then(() => location.reload());
             };
             reader.readAsDataURL(imgInput);
+        }
+
+        function borrarAddon(id) { if(confirm("¿Borrar?")) db.collection("addons").doc(id).delete(); }
+        function cerrarModal() { document.getElementById('modal-detalle').classList.add('hidden'); }
+        function iniciarSesionGoogle() { auth.signInWithPopup(provider); }
+        function cerrarSesion() { auth.signOut().then(() => location.reload()); }
+        function loginConEmail() { auth.signInWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value); }
+        function registroConEmail() { auth.createUserWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value); }
+        function buscarAddons() {
+            const val = document.getElementById('busqueda').value.toLowerCase();
+            mostrarAddons(todosLosAddons.filter(a => a.titulo.toLowerCase().includes(val)));
         }
     </script>
 </body>
