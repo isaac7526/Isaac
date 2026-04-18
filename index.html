@@ -158,14 +158,13 @@
         let addonActualId = null;
         let unsubscribeComentarios = null;
 
-        // --- FUNCIÓN DE COMPRESIÓN Y SEGURIDAD ---
+        // --- SISTEMA DE FOTO CON COMPRESIÓN Y FIRESTORE (SIN ERRORES) ---
         function cambiarFotoPerfil(input) {
             const file = input.files[0];
             if (!file) return;
 
-            // Filtro básico de seguridad por tamaño y tipo
-            if (file.size > 5 * 1024 * 1024) { // 5MB max
-                alert("La foto es demasiado pesada para el sistema de seguridad.");
+            if (file.size > 5 * 1024 * 1024) { 
+                alert("La foto es muy pesada. Usa una menor a 5MB.");
                 return;
             }
 
@@ -177,23 +176,24 @@
                 const img = new Image();
                 img.src = e.target.result;
                 img.onload = () => {
-                    // COMPRESIÓN: Reducimos la imagen a un tamaño pequeño (150x150)
-                    // Esto evita el error "URL too long" y quita metadatos ocultos
                     const canvas = document.createElement('canvas');
-                    const size = 150; 
+                    const size = 120; // Tamaño optimizado para evitar el error "URL too long"
                     canvas.width = size;
                     canvas.height = size;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, size, size);
                     
-                    // Bajamos la calidad al 60% para que la cadena sea corta
-                    const dataUrlReducida = canvas.toDataURL('image/jpeg', 0.6);
-
+                    const dataUrlReducida = canvas.toDataURL('image/jpeg', 0.5);
                     const user = auth.currentUser;
-                    user.updateProfile({ photoURL: dataUrlReducida }).then(() => {
+
+                    // Guardamos en la colección de usuarios para no depender del límite de Auth
+                    db.collection("usuarios").doc(user.uid).set({
+                        fotoPerfil: dataUrlReducida,
+                        nombre: user.displayName || "Miner"
+                    }, { merge: true }).then(() => {
                         document.getElementById('user-avatar').src = dataUrlReducida;
                         loader.style.display = "none";
-                        alert("¡Foto de perfil actualizada con éxito!");
+                        alert("¡Foto actualizada en tu perfil de Mc Ender!");
                     }).catch(err => {
                         loader.style.display = "none";
                         alert("Error: " + err.message);
@@ -203,7 +203,7 @@
             reader.readAsDataURL(file);
         }
 
-        // --- RESTO DE FUNCIONES ---
+        // --- FUNCIONES DE NAVEGACIÓN Y AUTH ---
         function toggleMenu() {
             document.getElementById('sidebar').classList.toggle('active');
             document.getElementById('overlay').classList.toggle('active');
@@ -221,6 +221,7 @@
             if (user && nuevo) {
                 user.updateProfile({ displayName: nuevo }).then(() => {
                     document.getElementById('user-name').innerText = nuevo;
+                    db.collection("usuarios").doc(user.uid).set({ nombre: nuevo }, { merge: true });
                     alert("Nombre actualizado.");
                 });
             }
@@ -234,14 +235,20 @@
             document.getElementById('user-info').classList.toggle('hidden', !logueado);
             if(user) {
                 document.getElementById('user-name').innerText = user.displayName || "Miner";
-                document.getElementById('user-avatar').src = user.photoURL || "https://via.placeholder.com/150";
-                db.collection("usuarios").doc(user.uid).onSnapshot(doc => {
+                // Buscamos la foto en Firestore primero para evitar el error de URL larga de Auth
+                db.collection("usuarios").doc(user.uid).get().then(doc => {
+                    if (doc.exists && doc.data().fotoPerfil) {
+                        document.getElementById('user-avatar').src = doc.data().fotoPerfil;
+                    } else {
+                        document.getElementById('user-avatar').src = user.photoURL || "https://via.placeholder.com/150";
+                    }
                     if (doc.exists) esAdmin = doc.data().rol === "admin";
                     mostrarAddons(todosLosAddons);
                 });
             }
         });
 
+        // --- FILTROS Y CONTENIDO ---
         function ordenar(modo) {
             let copia = [...todosLosAddons];
             if(modo === 'recientes') copia.sort((a,b) => b.fecha - a.fecha);
@@ -294,55 +301,4 @@
                     const c = doc.data();
                     const div = document.createElement('div');
                     div.className = "bg-white/5 p-3 rounded-2xl border border-white/5 flex gap-3";
-                    div.innerHTML = `<img src="${c.avatar || 'https://via.placeholder.com/150'}" class="w-8 h-8 rounded-full border border-blue-500/30 object-cover"><div><p class="text-[9px] font-black text-blue-400 italic">${c.usuario}</p><p class="text-[10px] text-gray-300">${c.texto}</p></div>`;
-                    lista.appendChild(div);
-                });
-            });
-        }
-
-        function enviarComentario() {
-            const input = document.getElementById('nuevo-comentario');
-            const user = auth.currentUser;
-            if (!input.value.trim() || !user) return;
-            db.collection("addons").doc(addonActualId).collection("comentarios").add({
-                usuario: user.displayName || "Miner",
-                avatar: user.photoURL || "",
-                texto: input.value,
-                fecha: Date.now()
-            }).then(() => input.value = "");
-        }
-
-        function publicarAddon() {
-            const btn = document.getElementById('btn-subir');
-            const imgInput = document.getElementById('add-image').files[0];
-            if(!imgInput) return;
-            btn.disabled = true; document.getElementById('btn-loader').style.display = "block";
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                db.collection("addons").add({
-                    titulo: document.getElementById('add-title').value,
-                    descripcion: document.getElementById('add-desc').value,
-                    link: document.getElementById('add-link').value,
-                    categoria: "Addon",
-                    foto: e.target.result,
-                    fecha: Date.now(),
-                    descargas: 0,
-                    autor: auth.currentUser ? (auth.currentUser.displayName || "Miner") : "Miner"
-                }).then(() => location.reload());
-            };
-            reader.readAsDataURL(imgInput);
-        }
-
-        function borrarAddon(id) { if(confirm("¿Borrar?")) db.collection("addons").doc(id).delete(); }
-        function cerrarModal() { document.getElementById('modal-detalle').classList.add('hidden'); }
-        function iniciarSesionGoogle() { auth.signInWithPopup(provider); }
-        function cerrarSesion() { auth.signOut().then(() => location.reload()); }
-        function loginConEmail() { auth.signInWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value); }
-        function registroConEmail() { auth.createUserWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value); }
-        function buscarAddons() {
-            const val = document.getElementById('busqueda').value.toLowerCase();
-            mostrarAddons(todosLosAddons.filter(a => a.titulo.toLowerCase().includes(val)));
-        }
-    </script>
-</body>
-</html>
+                    div.innerHTML = `<img src="${c.avatar || 'https://via.placeholder.com/150'}" class="w-8 h-8 rounded-full border border-blue-500/30 object-cover"><div><p class="text-[9px] font-black text-blue-400 itali
